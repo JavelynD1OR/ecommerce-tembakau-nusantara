@@ -985,13 +985,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // COD: "Bayar di Toko" hanya untuk Ambil di Toko; "COD ke Kurir" hanya untuk pengiriman.
+  function syncCodOptions() {
+    const ship = currentShipping();
+    const pickup = ship.name === 'Ambil di Toko';
+    const toko = document.getElementById('pay-opt-cod-toko');
+    const kurir = document.getElementById('pay-opt-cod-kurir');
+    if (toko) toko.style.display = pickup ? '' : 'none';
+    if (kurir) kurir.style.display = pickup ? 'none' : '';
+    const checked = document.querySelector('input[name="payment"]:checked');
+    if (checked && /^cod_/.test(checked.value) && checked.closest('.radio-card').style.display === 'none') {
+      const qris = document.querySelector('input[name="payment"][value="qris"]');
+      if (qris) { qris.checked = true; qris.dispatchEvent(new Event('change')); }
+    }
+  }
+
   document.querySelectorAll('input[name="courier"]').forEach(radio => {
     radio.addEventListener('change', () => {
       document.querySelectorAll('#courier-selector .radio-card').forEach(card => card.classList.remove('selected'));
       radio.closest('.radio-card')?.classList.add('selected');
       updateCheckoutSummary();
+      syncCodOptions();
     });
   });
+  syncCodOptions();
 
   document.querySelectorAll('#payment-selector input[name="payment"]').forEach(radio => {
     radio.addEventListener('change', () => {
@@ -1088,6 +1105,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     renderOrderConfirmModal(pendingCheckoutData);
+    const proceedBtn = document.getElementById('btn-proceed-pay');
+    if (proceedBtn) proceedBtn.textContent = /^cod_/.test(payment_code) ? '✅ Buat Pesanan (COD)' : '💳 Bayar Sekarang';
     orderConfirmModal.showModal();
   });
 
@@ -1168,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btn = document.getElementById('btn-proceed-pay');
     btn.disabled = true;
-    btn.textContent = 'Membuat tagihan pembayaran...';
+    btn.textContent = /^cod_/.test(pendingCheckoutData.payment_code || '') ? 'Membuat pesanan...' : 'Membuat tagihan pembayaran...';
 
     try {
       const orderPayload = {
@@ -1221,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Gagal membuat pesanan: ' + err.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = '💳 Bayar Sekarang';
+      btn.textContent = /^cod_/.test((pendingCheckoutData && pendingCheckoutData.payment_code) || '') ? '✅ Buat Pesanan (COD)' : '💳 Bayar Sekarang';
     }
   });
 
@@ -1323,6 +1342,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-open-snap')?.addEventListener('click', () => window.resumePayment(order.no_invoice));
 
     if (order.payment_status === 'paid') showPaidState(order);
+    else if (order.payment_status === 'cod') showCodState(order);
+  }
+
+  function showCodState(order) {
+    stopPayPoll();
+    setPayBadge(order);
+    const toOrdersBtn = document.getElementById('btn-modal-to-myorders');
+    if (toOrdersBtn) toOrdersBtn.style.display = 'inline-flex';
+    document.getElementById('pay-warning-box')?.remove();
+    const pickup = String(order.kurir || '').startsWith('Ambil di Toko');
+    const box = document.getElementById('payment-stage-actions');
+    if (box) {
+      box.innerHTML = `
+        <div class="wa-confirmation-box">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #065F46; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">
+            <span style="font-size: 1.2rem;">✓</span> Pesanan COD Diterima!
+          </div>
+          <p style="font-size: 0.84rem; color: #047857; margin-bottom: 14px; line-height: 1.45;">
+            ${pickup
+              ? `Pesanan Anda berstatus <strong>Diproses</strong>. Silakan ambil di toko dan bayar tunai <strong>${formatRupiah(order.total_bayar)}</strong> saat pengambilan. Toko akan menghubungi Anda lewat WhatsApp bila pesanan sudah siap.`
+              : `Pesanan Anda berstatus <strong>Diproses</strong>. Siapkan uang tunai <strong>${formatRupiah(order.total_bayar)}</strong> (sudah termasuk ongkir) untuk dibayar ke kurir saat barang tiba.`}
+          </p>
+          <a href="${storeContactUrl(order)}" target="_blank" rel="noopener noreferrer" class="btn-wa-owner">💬 Hubungi Toko via WhatsApp (opsional)</a>
+        </div>
+      `;
+    }
   }
 
   function setPayBadge(order) {
@@ -1536,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (order.payment_status === 'pending') {
       return `<button class="btn-action" onclick="window.openCancelOrder('${inv}')" style="width: 100%; justify-content: center; margin-bottom: 8px; background:#FFF; color:#B91C1C; border:1px solid #FCA5A5;">✕ Batalkan Pesanan</button>`;
     }
-    if (order.payment_status === 'paid' && order.status === 'Diproses' && order.cancel_status !== 'diajukan') {
+    if (['paid', 'cod'].includes(order.payment_status) && order.status === 'Diproses' && order.cancel_status !== 'diajukan') {
       return `<button class="btn-action" onclick="window.openCancelOrder('${inv}')" style="width: 100%; justify-content: center; margin-bottom: 8px; background:#FFF; color:#B91C1C; border:1px solid #FCA5A5;">✕ Ajukan Pembatalan</button>`;
     }
     if (order.status === 'Dikirim') {
@@ -1626,14 +1671,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const order = (state.userOrders || []).find(o => o.no_invoice === invoice);
     if (!order) return;
     cancelInvoice = invoice;
-    const paid = order.payment_status === 'paid';
+    const paid = ['paid', 'cod'].includes(order.payment_status);
+    const isCod = order.payment_status === 'cod';
     document.getElementById('cancel-modal-title').textContent = paid ? 'Ajukan Pembatalan Pesanan' : 'Batalkan Pesanan';
     const info = document.getElementById('cancel-modal-info');
     info.style.background = paid ? '#FEF3C7' : '#F3F4F6';
     info.style.border = paid ? '1px solid #FDE68A' : '1px solid #E5E7EB';
     info.style.color = paid ? '#92400E' : '#374151';
     info.innerHTML = paid
-      ? `Pesanan <strong>${esc(invoice)}</strong> sudah dibayar dan sedang diproses. Pembatalan perlu <strong>persetujuan toko</strong>; alasan Anda akan dibaca admin. Jika disetujui, dana dikembalikan oleh toko. Pesanan yang sudah <strong>dikirim</strong> tidak bisa dibatalkan.`
+      ? (isCod ? `Pesanan COD <strong>${esc(invoice)}</strong> sedang diproses. Pembatalan perlu <strong>persetujuan toko</strong>; alasan Anda akan dibaca admin. Pesanan yang sudah <strong>dikirim</strong> tidak bisa dibatalkan.` : `Pesanan <strong>${esc(invoice)}</strong> sudah dibayar dan sedang diproses. Pembatalan perlu <strong>persetujuan toko</strong>; alasan Anda akan dibaca admin. Jika disetujui, dana dikembalikan oleh toko. Pesanan yang sudah <strong>dikirim</strong> tidak bisa dibatalkan.`)
       : `Pesanan <strong>${esc(invoice)}</strong> belum dibayar. Jika dibatalkan, pesanan langsung dibatalkan dan stok dikembalikan.`;
     const reasons = (state.config && state.config.cancelReasons) || { lainnya: 'Lainnya' };
     document.getElementById('cancel-reason-list').innerHTML = Object.entries(reasons).map(([code, text], i) => `
@@ -1766,6 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
                 Metode: <strong>${esc(order.metode_bayar)}</strong>
               </div>
+              ${order.payment_status === 'cod' ? `<div style="font-size:0.76rem; color:#92400E; margin:-6px 0 10px 0; line-height:1.4;">💵 Belum dibayar — bayar tunai ${String(order.kurir || '').startsWith('Ambil di Toko') ? 'di toko saat mengambil' : 'ke kurir saat barang tiba'}.</div>` : ''}
               ${order.payment_status === 'pending' ? `
                 <button class="btn-action btn-action-primary" onclick="window.resumePayment('${esc(order.no_invoice)}')" style="width: 100%; justify-content: center; margin-bottom: 8px;">
                   💳 Bayar Sekarang

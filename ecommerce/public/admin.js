@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Label status pembayaran (dikonfirmasi Midtrans)
   function payLabel(o) {
-    const map = { paid: ['✓ Lunas', '#065F46'], pending: ['⏳ Belum dibayar', '#92400E'], expired: ['✕ Kedaluwarsa', '#991B1B'], failed: ['✕ Gagal/Batal', '#991B1B'], refunded: ['↩ Refund', '#5521B5'], legacy: ['(data lama)', '#6B7280'] };
+    const map = { paid: ['✓ Lunas', '#065F46'], pending: ['⏳ Belum dibayar', '#92400E'], cod: ['💵 COD – belum dibayar', '#92400E'], expired: ['✕ Kedaluwarsa', '#991B1B'], failed: ['✕ Gagal/Batal', '#991B1B'], refunded: ['↩ Refund', '#5521B5'], legacy: ['(data lama)', '#6B7280'] };
     const [t, c] = map[o.payment_status] || ['', '#6B7280'];
     return t ? `<div style="font-size:0.72rem; font-weight:600; color:${c}; margin-top:3px;">${t}${o.payment_status === 'paid' && o.metode_bayar ? ' · ' + o.metode_bayar : ''}</div>` : '';
   }
@@ -606,14 +606,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { }
   }
   function notifyNewOrders(list) {
-    const paid = new Set(list.filter(o => o.payment_status === 'paid' && o.status === 'Diproses').map(o => o.id));
+    const paid = new Set(list.filter(o => ['paid', 'cod'].includes(o.payment_status) && o.status === 'Diproses').map(o => o.id));
     const canc = new Set(list.filter(o => o.cancel_status === 'diajukan').map(o => o.id));
     if (seenPaid !== null) {
       const newPaid = [...paid].filter(id => !seenPaid.has(id)).length;
       const newCanc = [...canc].filter(id => !seenCancel.has(id)).length;
       if (newPaid || newCanc) {
         beep();
-        const msg = [newPaid ? `${newPaid} pesanan baru lunas` : '', newCanc ? `${newCanc} pengajuan batal baru` : ''].filter(Boolean).join(' • ');
+        const msg = [newPaid ? `${newPaid} pesanan baru masuk` : '', newCanc ? `${newCanc} pengajuan batal baru` : ''].filter(Boolean).join(' • ');
         let bar = document.getElementById('new-order-banner');
         if (!bar) {
           bar = document.createElement('div'); bar.id = 'new-order-banner';
@@ -685,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="btn-action btn-action-primary" onclick="window.openStatusModal(${order.id})" style="font-size: 0.75rem; margin-bottom: 4px;">
               ⚙️ Ubah Status
             </button>
+            ${order.payment_status === 'cod' && !['Dibatalkan', 'Kedaluwarsa'].includes(order.status) ? `<button class="btn-action" onclick="window.markCodPaid(${order.id})" style="font-size: 0.75rem; margin-bottom: 4px; background:#ECFDF5; color:#065F46; border:1px solid #6EE7B7;">💵 Tandai Lunas</button>` : ''}
             <button class="btn-action btn-action-secondary" onclick="window.viewInvoiceDetail('${order.no_invoice}')" style="font-size: 0.75rem;">
               Detail
             </button>
@@ -693,6 +694,19 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
   }
+
+  window.markCodPaid = async function (id) {
+    const o = state.orders.find(item => item.id === id);
+    if (!o) return;
+    if (!confirm(`Tandai pesanan ${o.no_invoice} sebagai LUNAS?\nPastikan uang tunai ${formatRupiah(o.total_bayar)} sudah benar-benar diterima.`)) return;
+    try {
+      const res = await adminFetch(`/api/orders/${id}/mark-paid`, { method: 'POST' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      alert('✓ ' + json.message);
+      fetchOrders(); loadStats();
+    } catch (err) { alert('Gagal: ' + err.message); }
+  };
 
   document.querySelectorAll('#order-status-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {

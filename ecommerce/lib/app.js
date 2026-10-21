@@ -131,8 +131,12 @@ const PAYMENT_METHODS = {
   va_bri:     { label: 'Transfer BRI (VA)',          enabled: ['bri_va'] },
   va_mandiri: { label: 'Transfer Mandiri (Bill)',    enabled: ['echannel'] },
   va_permata: { label: 'Transfer Permata (VA)',      enabled: ['permata_va'] },
-  semua:      { label: 'Metode lain (pilih di popup)', enabled: null }
+  semua:      { label: 'Metode lain (pilih di popup)', enabled: null },
+  // COD: tidak lewat Midtrans. 'only' membatasi pasangan dengan kurir.
+  cod_toko:   { label: 'Bayar di Toko (COD)',        enabled: null, cod: true, only: 'toko' },
+  cod_kurir:  { label: 'COD (Bayar ke Kurir)',       enabled: null, cod: true, only: 'kurir' }
 };
+const isCodCode = (c) => Object.prototype.hasOwnProperty.call(PAYMENT_METHODS, String(c)) && !!PAYMENT_METHODS[String(c)].cod;
 
 const CANCEL_REASONS = {
   salah_produk: 'Salah memilih produk / ingin mengubah isi pesanan',
@@ -659,7 +663,7 @@ app.delete('/api/products/:id', requireAdmin, ah(async (req, res) => {
 
 // ------------------------- PESANAN & PEMBAYARAN -------------------------
 app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
-  if (PAYMENT_MODE === 'disabled') {
+  if (PAYMENT_MODE === 'disabled' && !isCodCode(req.body.payment_code)) {
     return res.status(503).json({ success: false, message: 'Pembayaran belum dikonfigurasi oleh toko. Hubungi admin.' });
   }
   try {
@@ -676,6 +680,11 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
     if (!/^(\+62|62|0)8\d{7,12}$/.test(no_hp)) throw new Error('Nomor WhatsApp tidak valid (contoh: 081234567890).');
     if (alamat.length < 15) throw new Error('Alamat pengiriman belum lengkap.');
     if (!Object.prototype.hasOwnProperty.call(COURIERS, kurirCode)) throw new Error('Kurir tidak valid.');
+    if (payMethod.cod) {
+      const isPickup = kurirCode === 'Ambil di Toko';
+      if (payMethod.only === 'toko' && !isPickup) throw new Error('"Bayar di Toko" hanya untuk pesanan Ambil di Toko.');
+      if (payMethod.only === 'kurir' && isPickup) throw new Error('COD ke kurir hanya untuk pesanan yang dikirim. Untuk ambil di toko pilih "Bayar di Toko".');
+    }
     if (!rawItems.length || rawItems.length > 30) throw new Error('Keranjang kosong atau terlalu banyak item.');
 
     const invoice = newInvoice();
@@ -707,15 +716,22 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
       const r = await t.run(`
         INSERT INTO orders (user_id, no_invoice, nama_pelanggan, no_hp, alamat, kurir, ongkir, metode_bayar,
                             total_belanja, total_bayar, status, payment_status, items_json, created_at, expires_at, midtrans_order_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu Pembayaran', 'pending', ?, ?, ?, ?)
-      `, [req.user.id, invoice, nama, no_hp, alamat, kurirLabel, ongkir, payMethod.label, total_belanja, total_bayar, JSON.stringify(orderItems), nowSql(), expiresAt, invoice]);
-      await t.run('INSERT INTO midtrans_attempts (mt_order_id, order_id, created_at) VALUES (?, ?, ?)', [invoice, r.lastInsertRowid, nowSql()]);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [req.user.id, invoice, nama, no_hp, alamat, kurirLabel, ongkir, payMethod.label, total_belanja, total_bayar,
+        payMethod.cod ? 'Diproses' : 'Menunggu Pembayaran', payMethod.cod ? 'cod' : 'pending',
+        JSON.stringify(orderItems), nowSql(), payMethod.cod ? '' : expiresAt, invoice]);
+      if (!payMethod.cod) await t.run('INSERT INTO midtrans_attempts (mt_order_id, order_id, created_at) VALUES (?, ?, ?)', [invoice, r.lastInsertRowid, nowSql()]);
       if (!req.user.no_hp || !req.user.alamat) {
         await t.run("UPDATE users SET no_hp = CASE WHEN no_hp = '' THEN ? ELSE no_hp END, alamat = CASE WHEN alamat = '' THEN ? ELSE alamat END WHERE id = ?",
           [no_hp, alamat, req.user.id]);
       }
       return t.get('SELECT * FROM orders WHERE id = ?', [r.lastInsertRowid]);
     });
+
+    if (payMethod.cod) {
+      await notifyAdmin(`🛒 PESANAN COD BARU (bayar ${payMethod.only === 'toko' ? 'tunai di toko saat ambil' : 'ke kurir saat barang tiba'})\n${orderSummary(order)}`);
+      return res.status(201).json({ success: true, data: publicOrder(order), payment: null });
+    }
 
     let pay;
     try {
@@ -880,12 +896,12 @@ app.post('/api/orders/:invoice/cancel', requireUser, ah(async (req, res) => {
     }
     return res.json({ success: true, message: 'Pesanan dibatalkan.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
   }
-  if (o.payment_status === 'paid' && o.status === 'Diproses') {
+  if (['paid', 'cod'].includes(o.payment_status) && o.status === 'Diproses') {
     if (o.cancel_status === 'diajukan') return res.status(400).json({ success: false, message: 'Pengajuan pembatalan sudah dikirim dan sedang ditinjau toko.' });
     const u = await db.run("UPDATE orders SET cancel_status='diajukan', cancel_reason=?, cancel_at=? WHERE id=? AND status='Diproses'", [reasonText, nowSql(), o.id]);
     if (!u.changes) return res.status(409).json({ success: false, message: 'Status pesanan baru saja berubah (mungkin sudah dikirim). Muat ulang halaman.' });
     await notifyAdmin(`⚠️ PENGAJUAN BATAL (jangan kirim dulu)\n${orderSummary(o)}\nAlasan: ${reasonText}`);
-    return res.json({ success: true, message: 'Pengajuan pembatalan dikirim. Toko akan meninjau dan memproses pengembalian dana.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
+    return res.json({ success: true, message: o.payment_status === 'cod' ? 'Pengajuan pembatalan dikirim. Toko akan meninjau pesanan COD Anda.' : 'Pengajuan pembatalan dikirim. Toko akan meninjau dan memproses pengembalian dana.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
   }
   if (o.status === 'Dikirim' || o.status === 'Selesai') {
     return res.status(400).json({ success: false, message: 'Pesanan sudah dikirim, tidak bisa dibatalkan. Silakan hubungi toko.' });
@@ -900,6 +916,17 @@ app.post('/api/orders/:id/cancel-request/reject', requireAdmin, ah(async (req, r
   res.json({ success: true, message: 'Pengajuan pembatalan ditolak.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
 }));
 
+// COD: admin menandai lunas manual setelah uang tunai diterima.
+app.post('/api/orders/:id/mark-paid', requireAdmin, ah(async (req, res) => {
+  const o = await db.get('SELECT * FROM orders WHERE id = ?', [Number(req.params.id)]);
+  if (!o) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
+  if (o.payment_status !== 'cod') return res.status(400).json({ success: false, message: 'Hanya pesanan COD yang belum dibayar yang bisa ditandai lunas.' });
+  if (['Dibatalkan', 'Kedaluwarsa'].includes(o.status)) return res.status(400).json({ success: false, message: 'Pesanan sudah dibatalkan.' });
+  const u = await db.run("UPDATE orders SET payment_status='paid', payment_type='cod', paid_at=? WHERE id=? AND payment_status='cod'", [nowSql(), o.id]);
+  if (!u.changes) return res.status(409).json({ success: false, message: 'Status pesanan baru saja berubah. Muat ulang halaman.' });
+  res.json({ success: true, message: 'Pesanan COD ditandai lunas.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
+}));
+
 const STATUS_ALLOWED = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan', 'Kedaluwarsa'];
 app.put('/api/orders/:id/status', requireAdmin, ah(async (req, res) => {
   const status = String(req.body.status || '');
@@ -912,7 +939,7 @@ app.put('/api/orders/:id/status', requireAdmin, ah(async (req, res) => {
     return res.status(409).json({ success: false, message: `Pelanggan mengajukan pembatalan (${o.cancel_reason}). Putuskan dulu: setujui (ubah ke Dibatalkan) atau tolak, sebelum mengirim.` });
   }
   const needsPaid = ['Diproses', 'Dikirim', 'Selesai'].includes(status);
-  if (needsPaid && !['paid', 'legacy'].includes(o.payment_status)) {
+  if (needsPaid && !['paid', 'legacy', 'cod'].includes(o.payment_status)) {
     return res.status(400).json({ success: false, message: 'Pesanan belum dibayar. Status hanya bisa diubah setelah pembayaran dikonfirmasi Midtrans.' });
   }
   if (status === 'Dibatalkan' && o.payment_status === 'pending' && PAYMENT_MODE === 'midtrans') {
@@ -923,7 +950,7 @@ app.put('/api/orders/:id/status', requireAdmin, ah(async (req, res) => {
     if (status === 'Dikirim' && o.status !== 'Dikirim') await t.run('UPDATE orders SET shipped_at = ? WHERE id = ?', [nowSql(), o.id]);
     if (status === 'Selesai' && o.status !== 'Selesai') await t.run("UPDATE orders SET received_at = ?, received_by = 'admin' WHERE id = ?", [nowSql(), o.id]);
     if (['Dibatalkan', 'Kedaluwarsa'].includes(status)) {
-      if (o.payment_status === 'pending') await t.run("UPDATE orders SET payment_status='failed' WHERE id = ?", [o.id]);
+      if (['pending', 'cod'].includes(o.payment_status)) await t.run("UPDATE orders SET payment_status='failed' WHERE id = ?", [o.id]);
       if (o.cancel_status === 'diajukan') await t.run("UPDATE orders SET cancel_status='disetujui' WHERE id = ?", [o.id]);
       await restockOrder(t, o);
     }
