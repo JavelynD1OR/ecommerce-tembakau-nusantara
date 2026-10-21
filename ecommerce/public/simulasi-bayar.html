@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Pembayaran (Mode Uji)</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { display:flex; justify-content:center; padding:32px 16px; background:#F6F5F2; }
+    .box { background:#fff; border:1px solid #E2DFD9; border-radius:10px; max-width:440px; width:100%; padding:24px; }
+    .warn { background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; border-radius:8px; padding:10px 12px; font-size:.85rem; margin-bottom:16px; }
+    button { width:100%; padding:12px; border-radius:8px; border:0; font-weight:700; cursor:pointer; margin-top:10px; font-size:.95rem; }
+    .ok { background:#047857; color:#fff; } .no { background:#fff; border:1px solid #E2DFD9; color:#991B1B; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="warn">⚠️ <strong>MODE SIMULASI.</strong> Halaman ini hanya ada saat kunci Midtrans belum diisi. Tidak ada uang yang bergerak.</div>
+    <h2 style="color:#5C3A21;margin-bottom:4px;">Simulasi Pembayaran</h2>
+    <p id="info" style="color:#6B7280;font-size:.9rem;">Memuat...</p>
+    <button class="ok" id="btn-ok">✓ Simulasikan Pembayaran Berhasil</button>
+    <button class="no" id="btn-exp">✕ Simulasikan Kedaluwarsa</button>
+    <p id="msg" style="margin-top:14px;font-weight:600;"></p>
+  </div>
+  <script>
+    const inv = new URLSearchParams(location.search).get('invoice');
+    const token = localStorage.getItem('nusantara_user_token');
+    const H = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
+    document.getElementById('info').textContent = 'Pesanan: ' + inv;
+    async function go(outcome) {
+      const r = await fetch('/api/dev/simulate-pay/' + encodeURIComponent(inv), { method: 'POST', headers: H, body: JSON.stringify({ outcome }) });
+      const j = await r.json();
+      document.getElementById('msg').textContent = j.success ? 'Selesai: status pesanan sekarang "' + j.data.status + '". Anda boleh menutup tab ini.' : (j.message || 'Gagal');
+    }
+    document.getElementById('btn-ok').onclick = () => go('settlement');
+    document.getElementById('btn-exp').onclick = () => go('expire');
+  </script>
+</body>
+</html>

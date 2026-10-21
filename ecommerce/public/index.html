@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toko Nusantara Tobacco - Penjualan Tembakau & Alat Linting</title>
+  <meta name="description"
+    content="Sistem Informasi E-Commerce Penjualan Tembakau dan Alat Linting serta Manajemen Stok Berbasis Web - Toko Nusantara Tobacco.">
+  <!-- Favicon Logo Tembakau Nusantara (Anti Cache) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=tobacco2">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=tobacco2">
+  <link rel="shortcut icon" href="/favicon.ico?v=tobacco2">
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Font Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- Top Notification & Age Restriction Bar -->
+  <header class="top-notice-bar" role="region" aria-label="Informasi Toko dan Batasan Usia">
+    <div class="notice-warning">
+      <span class="notice-pill">18+</span>
+      <span>PERINGATAN: Khusus 18 Tahun ke Atas. Produk tembakau hanya untuk konsumen dewasa.</span>
+    </div>
+    <div class="notice-info">
+      <span>📍 Malioboro, Yogyakarta</span>
+      <span>🕒 Buka: 08.00 - 21.00 WIB</span>
+      <span>💬 WhatsApp: 0812-3456-7890</span>
+    </div>
+  </header>
+
+  <!-- Header & Navigasi Utama Pelanggan -->
+  <nav class="main-header" aria-label="Navigasi Utama">
+    <div class="header-container">
+      <div class="brand-wrapper" id="brand-home-btn" role="button" tabindex="0" title="Ke Beranda Katalog"
+        style="cursor: pointer; display: flex; align-items: center; gap: 12px;">
+        <img src="/favicon.svg" alt="Logo Tembakau Nusantara"
+          style="width: 42px; height: 42px; border-radius: 9px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+        <div class="brand-text">
+          <h1>Nusantara Tobacco</h1>
+          <p>Pusat Tembakau Pilihan & Alat Linting Tradisional</p>
+        </div>
+      </div>
+
+      <div class="main-nav">
+        <button id="nav-catalog-btn" class="nav-link active">
+          🛍️ <span>Katalog Produk</span>
+        </button>
+        <button id="nav-cart-btn" class="nav-link">
+          🛒 <span>Keranjang</span>
+          <span id="cart-counter-badge" class="nav-badge" style="display: none;">0</span>
+        </button>
+        <button id="nav-orders-btn" class="nav-link">
+          📦 <span>Pesanan Saya</span>
+        </button>
+
+        <!-- Bagian Akun Pelanggan (Login / Profil) -->
+        <div class="user-menu-wrapper" id="user-menu-wrapper">
+          <!-- State 1: Belum Login -->
+          <a href="/login.html" id="btn-open-login" class="nav-link btn-admin-nav"
+            style="border-color: #D4C9BC; text-decoration: none;">
+            👤 <span>Masuk / Daftar</span>
+          </a>
+
+          <!-- State 2: Sudah Login (User Chip Dropdown) -->
+          <div id="user-logged-box" style="display: none;">
+            <button id="btn-user-dropdown-toggle" class="btn-user-chip">
+              <img id="user-avatar-img" src="https://lh3.googleusercontent.com/a/default-user" class="user-avatar-small"
+                alt="Avatar">
+              <span id="user-display-name">Akun Saya</span>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">▼</span>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="user-dropdown-menu" class="user-dropdown-menu">
+              <div class="dropdown-user-header">
+                <div class="dropdown-user-name" id="dropdown-name">Nama Pelanggan</div>
+                <div class="dropdown-user-email" id="dropdown-email">email@gmail.com</div>
+                <span class="badge-category" style="font-size: 0.7rem; margin-top: 4px; display: inline-block;">✓
+                  Terverifikasi Google</span>
+              </div>
+              <button class="dropdown-item" id="btn-menu-address">
+                📍 <span>Alamat Pengiriman Saya</span>
+              </button>
+              <button class="dropdown-item" id="btn-menu-orders">
+                📦 <span>Riwayat Pesanan Saya</span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="btn-menu-logout" style="color: #DC2626;">
+                🚪 <span>Keluar Akun</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Kontainer Konten Utama -->
+  <main class="app-container">
+
+    <!-- ========================================================
+         VIEW 1: KATALOG PRODUK
+         ======================================================== -->
+    <section id="view-catalog" class="app-view">
+      <!-- Banner Sederhana Toko -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <h2>Tembakau Nusantara Pilihan & Perlengkapan Linting Terlengkap</h2>
+          <p>
+            Menyediakan ragam rajangan tembakau asli Temanggung, Gayo, Madura, hingga varian mole flavour aromatik.
+            Lengkap dengan handroller stainless, papir manis, dan filter rokok berkualitas untuk kepuasan tingwe
+            (ngelinting dewe).
+          </p>
+        </div>
+        <div class="hero-features">
+          <div class="feature-tag">🍃 100% Daun Pilihan Asli</div>
+          <div class="feature-tag">🚚 Kirim ke Seluruh Indonesia</div>
+          <div class="feature-tag">🏪 Bisa Ambil di Toko</div>
+        </div>
+      </div>
+
+      <!-- Toolbar Pencarian & Filter Kategori -->
+      <div class="toolbar-section">
+        <div class="category-tabs" id="catalog-category-tabs">
+          <button class="tab-btn active" data-category="Semua">Semua Produk</button>
+          <button class="tab-btn" data-category="Tembakau Nusantara">Tembakau Nusantara</button>
+          <button class="tab-btn" data-category="Tembakau Flavour">Tembakau Flavour</button>
+          <button class="tab-btn" data-category="Alat Linting">Alat Linting</button>
+          <button class="tab-btn" data-category="Paket Bundling">Paket Bundling</button>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="catalog-search-input" class="search-input"
+              placeholder="Cari nama tembakau, rasa, atau alat...">
+          </div>
+          <select id="catalog-sort-select" class="form-control"
+            style="width: auto; padding: 7px 10px; font-size: 0.85rem;">
+            <option value="default">Urutkan: Rekomendasi</option>
+            <option value="price-asc">Harga: Termurah</option>
+            <option value="price-desc">Harga: Termahal</option>
+            <option value="name-asc">Nama: A - Z</option>
+            <option value="stock-desc">Stok: Terbanyak</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Grid Produk -->
+      <div id="catalog-products-grid" class="products-grid">
+        <!-- Dimuat secara dinamis oleh JavaScript -->
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VIEW 2: KERANJANG & CHECKOUT PENGIRIMAN
+         ======================================================== -->
+    <section id="view-cart" class="app-view" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.4rem; color: var(--primary); font-weight: 700;">Keranjang Belanja & Checkout</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Periksa item pesanan Anda dan lengkapi data pengiriman untuk menyelesaikan pesanan.
+        </p>
+      </div>
+
+      <!-- Jika Keranjang Kosong -->
+      <div id="cart-empty-message" class="empty-state" style="display: none;">
+        <div class="empty-icon">🛒</div>
+        <h3>Keranjang Belanja Anda Masih Kosong</h3>
+        <p>Jelajahi koleksi tembakau nusantara dan alat linting kami untuk mulai berbelanja.</p>
+        <button id="btn-back-to-shop" class="btn-action btn-action-primary" style="padding: 10px 20px;">
+          Mulai Belanja Sekarang
+        </button>
+      </div>
+
+      <!-- Layout Keranjang dan Checkout -->
+      <div id="payment-mode-banner" style="display:none; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; padding:10px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:14px;"></div>
+      <div id="cart-content-wrapper" class="checkout-layout">
+        <!-- Kolom Kiri: Tabel Item & Form Alamat -->
+        <div class="checkout-left-col">
+          <!-- Tabel Item Keranjang -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h3><span>📋 Daftar Item Belanja</span></h3>
+              <button id="btn-clear-cart" class="btn-action btn-action-secondary" style="font-size: 0.78rem;">
+                Kosongkan Keranjang
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table" id="cart-table">
+                <thead>
+                  <tr>
+                    <th>Produk</th>
+                    <th>Harga</th>
+                    <th style="text-align: center;">Kuantitas</th>
+                    <th style="text-align: right;">Subtotal</th>
+                    <th style="text-align: center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-table-body">
+                  <!-- Dimuat oleh JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Form Data Pengiriman dengan Validasi Akun Anti-Fiktif -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h3><span>📍 Informasi Penerima & Pengiriman</span></h3>
+            </div>
+
+            <!-- Banner Status Autentikasi Pengguna di Checkout -->
+            <div id="checkout-auth-alert-box" class="checkout-auth-alert unverified">
+              <div style="font-size: 1.3rem;">⚠️</div>
+              <div style="flex: 1;">
+                <strong>Verifikasi Akun Pelanggan Diperlukan</strong>
+                <span>Untuk mencegah pesanan fiktif/iseng dari kalangan luar yang tidak bertanggung jawab, Anda wajib
+                  masuk terlebih dahulu. Data alamat dan kontak Anda akan tersimpan secara aman.</span>
+                <div style="margin-top: 10px;">
+                  <button type="button" id="btn-checkout-login-trigger" class="btn-action btn-action-primary"
+                    style="font-size: 0.84rem; padding: 6px 14px;">
+                    🔑 Masuk / Daftar Akun
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <form id="checkout-form">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label class="form-label" for="checkout-name">Nama Lengkap Penerima <span class="req">*</span></label>
+                  <input type="text" id="checkout-name" class="form-control" placeholder="Nama lengkap penerima"
+                    required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="checkout-phone">Nomor WhatsApp / HP Aktif <span
+                      class="req">*</span></label>
+                  <input type="tel" id="checkout-phone" class="form-control" placeholder="Contoh: 081234567890"
+                    required>
+                </div>
+              </div>
+
+              <div class="address-box-container">
+                <div class="form-group span-full">
+                  <label class="form-label" for="checkout-addr-jalan">Nama Jalan / Gedung / No. Rumah / Patokan <span class="req">*</span></label>
+                  <input type="text" id="checkout-addr-jalan" class="form-control"
+                    placeholder="Contoh: Jl. Malioboro No. 45, Seberang Toko Batik" required>
+                </div>
+
+                <div class="form-row-three">
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-rtrw">RT / RW <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-rtrw" class="form-control" placeholder="Contoh: 002/005" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-kelurahan">Desa / Kelurahan <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-kelurahan" class="form-control" placeholder="Contoh: Sosromenduran" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-kecamatan">Kecamatan <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-kecamatan" class="form-control" placeholder="Contoh: Gedong Tengen" required>
+                  </div>
+                </div>
+
+                <div class="form-row-three">
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-kota">Kota / Kabupaten <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-kota" class="form-control" placeholder="Contoh: Kota Yogyakarta" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-provinsi">Provinsi <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-provinsi" class="form-control" placeholder="Contoh: D.I. Yogyakarta" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="checkout-addr-kodepos">Kode Pos <span class="req">*</span></label>
+                    <input type="text" id="checkout-addr-kodepos" class="form-control" placeholder="5 Digit, contoh: 55271"
+                      maxlength="5" pattern="[0-9]{5}" required>
+                  </div>
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: -4px; margin-bottom: 12px;">
+                  📍 Alamat pengiriman terstruktur ini otomatis terintegrasi dan tersimpan di akun Anda.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Pilihan Kurir & Layanan Pengiriman <span class="req">*</span></label>
+                <div class="radio-card-group" id="courier-selector">
+                  <label class="radio-card selected">
+                    <input type="radio" name="courier" value="JD Express" data-perkg="3500" checked>
+                    <div class="radio-info">
+                      <div class="radio-title">
+                        <span>JD Express (Estimasi 2 - 4 Hari)</span>
+                        <strong style="color: var(--primary);" class="courier-price">Rp 3.500 / kg</strong>
+                      </div>
+                      <div class="radio-desc">Tarif Rp 3.500 per kilo. Ongkir otomatis menyesuaikan total berat belanjaan.</div>
+                    </div>
+                  </label>
+
+                  <label class="radio-card">
+                    <input type="radio" name="courier" value="J&T Express" data-perkg="5500">
+                    <div class="radio-info">
+                      <div class="radio-title">
+                        <span>J&T Express (Estimasi 2 - 3 Hari)</span>
+                        <strong style="color: var(--primary);" class="courier-price">Rp 5.500 / kg</strong>
+                      </div>
+                      <div class="radio-desc">Tarif Rp 5.500 per kilo. Ongkir otomatis menyesuaikan total berat belanjaan.</div>
+                    </div>
+                  </label>
+
+                  <label class="radio-card">
+                    <input type="radio" name="courier" value="Ambil di Toko" data-perkg="0">
+                    <div class="radio-info">
+                      <div class="radio-title">
+                        <span>Ambil Langsung di Toko (Outlet Yogyakarta)</span>
+                        <strong style="color: #047857;">Gratis (Rp 0)</strong>
+                      </div>
+                      <div class="radio-desc">Ambil di Toko Nusantara Tobacco, Jl. Malioboro No. 45, D.I. Yogyakarta.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- METODE PEMBAYARAN: dipilih langsung di sini, lalu dibayar via Midtrans -->
+              <div class="form-group">
+                <label class="form-label">Metode Pembayaran <span class="req">*</span></label>
+                <div class="pay-option-grid" id="payment-selector">
+                  <label class="radio-card pay-option selected">
+                    <input type="radio" name="payment" value="qris" data-label="QRIS" checked>
+                    <span class="pay-badge">QR</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>QRIS</span></div>
+                      <div class="radio-desc">Scan dengan e-wallet / m-banking apa pun</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="gopay" data-label="GoPay">
+                    <span class="pay-badge">GP</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>GoPay</span></div>
+                      <div class="radio-desc">Bayar lewat aplikasi Gojek / GoPay</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="shopeepay" data-label="ShopeePay">
+                    <span class="pay-badge">SP</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>ShopeePay</span></div>
+                      <div class="radio-desc">Bayar lewat aplikasi Shopee</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="dana" data-label="DANA">
+                    <span class="pay-badge">DA</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>DANA</span></div>
+                      <div class="radio-desc">Bayar lewat aplikasi DANA</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="va_bca" data-label="Transfer BCA">
+                    <span class="pay-badge">BCA</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Transfer BCA</span></div>
+                      <div class="radio-desc">Virtual Account BCA</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="va_bni" data-label="Transfer BNI">
+                    <span class="pay-badge">BNI</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Transfer BNI</span></div>
+                      <div class="radio-desc">Virtual Account BNI</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="va_bri" data-label="Transfer BRI">
+                    <span class="pay-badge">BRI</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Transfer BRI</span></div>
+                      <div class="radio-desc">Virtual Account BRI</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="va_mandiri" data-label="Transfer Mandiri">
+                    <span class="pay-badge">MDR</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Transfer Mandiri</span></div>
+                      <div class="radio-desc">Mandiri Bill Payment</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="va_permata" data-label="Transfer Permata">
+                    <span class="pay-badge">PMT</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Transfer Permata</span></div>
+                      <div class="radio-desc">Virtual Account Permata</div>
+                    </div>
+                  </label>
+                  <label class="radio-card pay-option">
+                    <input type="radio" name="payment" value="semua" data-label="Metode lain">
+                    <span class="pay-badge">···</span>
+                    <div class="radio-info">
+                      <div class="radio-title"><span>Metode lain</span></div>
+                      <div class="radio-desc">Pilih sendiri di popup pembayaran</div>
+                    </div>
+                  </label>
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 8px;">
+                  🔒 Dibayar aman lewat Midtrans. Nominal terisi otomatis dan status pesanan berubah otomatis setelah dana diterima, tanpa perlu kirim bukti transfer.
+                </small>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Ringkasan Tagihan Sticky -->
+        <div class="checkout-right-col">
+          <div class="order-summary-card">
+            <h3 class="summary-title">Ringkasan Pembayaran</h3>
+
+            <div class="summary-row">
+              <span>Total Harga Produk</span>
+              <strong id="summary-subtotal">Rp 0</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Ongkos Kirim (<span id="summary-courier-name">JD Express</span>)<small id="summary-weight" style="display:block; color: var(--text-muted); font-weight: 400; font-size: 0.76rem;"></small></span>
+              <strong id="summary-ongkir">Rp 3.500</strong>
+            </div>
+
+            <div class="summary-row total">
+              <span>Total Tagihan</span>
+              <span id="summary-grandtotal">Rp 0</span>
+            </div>
+
+            <button type="button" id="btn-submit-order" class="btn-primary-block">
+              🛍️ Konfirmasi & Buat Pesanan
+            </button>
+
+            <div
+              style="font-size: 0.78rem; color: var(--text-muted); margin-top: 14px; line-height: 1.4; text-align: center;">
+              🔒 Stok barang di gudang akan otomatis terpotong saat pesanan berhasil dibuat.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VIEW 3: PESANAN SAYA (RIWAYAT & LACAK STATUS)
+         ======================================================== -->
+    <section id="view-orders" class="app-view" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.4rem; color: var(--primary); font-weight: 700;">Pesanan Saya & Lacak Status</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Pantau status pesanan tembakau dan nomor resi pengiriman Anda secara real-time.
+        </p>
+      </div>
+
+      <!-- Filter Pencarian Pesanan -->
+      <div class="toolbar-section">
+        <div class="category-tabs" id="order-status-tabs">
+          <button class="tab-btn active" data-status="Semua">Semua</button>
+          <button class="tab-btn" data-status="Menunggu Pembayaran">Menunggu Pembayaran</button>
+          <button class="tab-btn" data-status="Diproses">Diproses</button>
+          <button class="tab-btn" data-status="Dikirim">Dikirim</button>
+          <button class="tab-btn" data-status="Selesai">Selesai</button>
+          <button class="tab-btn" data-status="Dibatalkan">Dibatalkan</button>
+        </div>
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="order-search-input" class="search-input" placeholder="Cari No. Invoice atau No. HP...">
+        </div>
+      </div>
+
+      <!-- Daftar Kartu Pesanan -->
+      <div id="orders-list-container">
+        <!-- Dimuat oleh JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ========================================================
+       MODAL 1: LOGIN / DAFTAR PELANGGAN (DENGAN GOOGLE)
+       ======================================================== -->
+  <dialog id="modal-customer-login" class="custom-modal">
+    <div class="modal-header">
+      <h3>👤 Masuk ke Akun Toko</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-customer-login').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          Masuk ke akun Anda untuk menyimpan alamat pengiriman pribadi dan mencegah pesanan fiktif.
+        </p>
+      </div>
+
+      <!-- Tombol Google asli (Google Identity Services) - tampil hanya jika GOOGLE_CLIENT_ID diisi -->
+      <div id="google-signin-slot" style="display: none;">
+        <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
+      <div style="display: flex; align-items: center; margin: 18px 0; gap: 10px;">
+        <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        <span style="font-size: 0.78rem; color: var(--text-muted);">atau gunakan email</span>
+        <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+      </div>
+      </div>
+
+      <!-- Tab Masuk / Daftar Email Biasa -->
+      <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+        <button type="button" id="tab-auth-login" class="tab-btn active" style="flex: 1;">Masuk</button>
+        <button type="button" id="tab-auth-register" class="tab-btn" style="flex: 1;">Daftar Akun Baru</button>
+      </div>
+
+      <!-- Form Masuk Manual -->
+      <form id="form-customer-manual-login">
+        <div class="form-group">
+          <label class="form-label" for="manual-login-email">Email</label>
+          <input type="email" id="manual-login-email" class="form-control" placeholder="nama@email.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manual-login-password">Password</label>
+          <input type="password" id="manual-login-password" class="form-control" placeholder="••••••" required>
+        </div>
+        <button type="submit" class="btn-primary-block" style="margin-top: 10px; padding: 10px;">
+          Masuk ke Akun
+        </button>
+      </form>
+
+      <!-- Form Daftar Manual -->
+      <form id="form-customer-manual-register" style="display: none;">
+        <div class="form-group">
+          <label class="form-label" for="reg-nama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="reg-nama" class="form-control" placeholder="Nama sesuai KTP" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Email Aktif <span class="req">*</span></label>
+          <input type="email" id="reg-email" class="form-control" placeholder="nama@email.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-hp">Nomor WhatsApp <span class="req">*</span></label>
+          <input type="tel" id="reg-hp" class="form-control" placeholder="081234567890" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-addr-jalan">Nama Jalan / Gedung / No. Rumah / Patokan <span class="req">*</span></label>
+          <input type="text" id="reg-addr-jalan" class="form-control" placeholder="Contoh: Jl. Malioboro No. 45, Seberang Toko Batik" required>
+        </div>
+        <div class="form-row-two">
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-rtrw">RT / RW <span class="req">*</span></label>
+            <input type="text" id="reg-addr-rtrw" class="form-control" placeholder="Contoh: 002/005" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-kelurahan">Desa / Kelurahan <span class="req">*</span></label>
+            <input type="text" id="reg-addr-kelurahan" class="form-control" placeholder="Contoh: Sosromenduran" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-kecamatan">Kecamatan <span class="req">*</span></label>
+            <input type="text" id="reg-addr-kecamatan" class="form-control" placeholder="Contoh: Gedong Tengen" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-kota">Kota / Kabupaten <span class="req">*</span></label>
+            <input type="text" id="reg-addr-kota" class="form-control" placeholder="Contoh: Kota Yogyakarta" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-provinsi">Provinsi <span class="req">*</span></label>
+            <input type="text" id="reg-addr-provinsi" class="form-control" placeholder="Contoh: D.I. Yogyakarta" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-kodepos">Kode Pos <span class="req">*</span></label>
+            <input type="text" id="reg-addr-kodepos" class="form-control" placeholder="5 digit, contoh: 55271" maxlength="5" inputmode="numeric" pattern="[0-9]{5}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass">Buat Password <span class="req">*</span></label>
+          <input type="password" id="reg-pass" class="form-control" placeholder="Minimal 8 karakter" required
+            minlength="8" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass2">Konfirmasi Password <span class="req">*</span></label>
+          <input type="password" id="reg-pass2" class="form-control" placeholder="Ketik ulang password" required minlength="8" autocomplete="new-password">
+          <span id="reg-pass-hint" class="pw-match-hint"></span>
+        </div>
+        <button type="submit" class="btn-primary-block" style="margin-top: 10px; padding: 10px;">
+          Daftarkan Akun
+        </button>
+      </form>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL 2: KELOLA ALAMAT PENGIRIMAN PRIBADI SAYA
+       ======================================================== -->
+  <dialog id="modal-user-address" class="custom-modal">
+    <div class="modal-header">
+      <h3>📍 Alamat Pengiriman Saya</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-user-address').close()">✕</button>
+    </div>
+    <form id="form-user-address">
+      <div class="modal-body">
+        <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">
+          Alamat ini tersimpan di akun Anda dan akan otomatis terisi saat melakukan checkout pesanan.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-nama">Nama Lengkap Penerima <span class="req">*</span></label>
+          <input type="text" id="profile-nama" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-email">Email Akun (Terkait)</label>
+          <input type="email" id="profile-email" class="form-control" readonly
+            style="background-color: var(--surface-alt); color: var(--text-muted);">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-hp">Nomor WhatsApp / HP Aktif <span class="req">*</span></label>
+          <input type="tel" id="profile-hp" class="form-control" placeholder="081234567890" required>
+        </div>
+
+        <!-- 7 KOTAK ALAMAT PENGIRIMAN TERSTRUKTUR -->
+        <div class="address-box-container">
+          <div class="form-group span-full">
+            <label class="form-label" for="profile-addr-jalan">Nama Jalan / Gedung / No. Rumah / Patokan <span class="req">*</span></label>
+            <input type="text" id="profile-addr-jalan" class="form-control"
+              placeholder="Contoh: Jl. Malioboro No. 45, Seberang Toko Batik" required>
+          </div>
+
+          <div class="form-row-three">
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-rtrw">RT / RW <span class="req">*</span></label>
+              <input type="text" id="profile-addr-rtrw" class="form-control" placeholder="Contoh: 002/005" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-kelurahan">Desa / Kelurahan <span class="req">*</span></label>
+              <input type="text" id="profile-addr-kelurahan" class="form-control" placeholder="Contoh: Sosromenduran" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-kecamatan">Kecamatan <span class="req">*</span></label>
+              <input type="text" id="profile-addr-kecamatan" class="form-control" placeholder="Contoh: Gedong Tengen" required>
+            </div>
+          </div>
+
+          <div class="form-row-three">
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-kota">Kota / Kabupaten <span class="req">*</span></label>
+              <input type="text" id="profile-addr-kota" class="form-control" placeholder="Contoh: Kota Yogyakarta" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-provinsi">Provinsi <span class="req">*</span></label>
+              <input type="text" id="profile-addr-provinsi" class="form-control" placeholder="Contoh: D.I. Yogyakarta" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-addr-kodepos">Kode Pos <span class="req">*</span></label>
+              <input type="text" id="profile-addr-kodepos" class="form-control" placeholder="5 Digit, contoh: 55271"
+                maxlength="5" pattern="[0-9]{5}" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-action-secondary"
+          onclick="document.getElementById('modal-user-address').close()">Batal</button>
+        <button type="submit" class="btn-action btn-action-primary">Simpan Alamat Saya</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL: TAHAP A - POP-UP DETAIL PESANAN (KONFIRMASI SEBELUM BAYAR)
+       ======================================================== -->
+  <dialog id="modal-order-confirm" class="custom-modal" style="max-width: 680px;">
+    <div class="modal-header">
+      <h3>📋 Detail Pesanan (Konfirmasi Sebelum Bayar)</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-order-confirm').close()">✕</button>
+    </div>
+    <div class="modal-body" id="order-confirm-body">
+      <!-- Dimuat dinamis oleh JavaScript -->
+    </div>
+    <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-order-confirm').close()" style="flex: 1; justify-content: center; padding: 10px;">
+        ✕ Tutup & Ubah
+      </button>
+      <button type="button" id="btn-proceed-pay" class="btn-action btn-action-primary" style="flex: 2; justify-content: center; padding: 10px; font-weight: 700; font-size: 0.95rem;">
+        💳 Bayar Sekarang
+      </button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL: TAHAP B & C - HALAMAN PEMBAYARAN DETAIL & REDIRECT APK
+       ======================================================== -->
+  <dialog id="modal-payment-detail" class="custom-modal" style="max-width: 680px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: #FFF;">
+      <h3 style="color: #FFF;">💳 Halaman Pembayaran Detail Pesanan</h3>
+      <button class="btn-close-modal" style="color: #FFF;" onclick="document.getElementById('modal-payment-detail').close()">✕</button>
+    </div>
+    <div class="modal-body" id="payment-detail-body">
+      <!-- Dimuat dinamis oleh JavaScript -->
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+      <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-payment-detail').close()">
+        Tutup
+      </button>
+      <button type="button" id="btn-modal-to-myorders" class="btn-action btn-action-primary" style="display: none;">
+        📦 Ke Halaman Pesanan Saya
+      </button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL: GANTI METODE PEMBAYARAN (pesanan belum dibayar)
+       ======================================================== -->
+  <dialog id="modal-change-payment" class="custom-modal" style="max-width: 640px;">
+    <div class="modal-header">
+      <h3>💳 Ganti Metode Pembayaran</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-change-payment').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.86rem; color: var(--text-muted); margin-bottom:12px;">
+        Pesanan <strong id="chg-pay-invoice">-</strong> &middot; Total <strong id="chg-pay-total">-</strong>.
+        Tagihan sebelumnya otomatis dibatalkan dan diganti tagihan baru dengan metode yang Anda pilih. Batas waktu bayar tidak berubah.
+      </p>
+      <div class="pay-option-grid" id="chg-pay-options"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-change-payment').close()">Batal</button>
+      <button type="button" id="btn-chg-pay-submit" class="btn-action btn-action-primary">Ganti &amp; Lanjut Bayar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL: BATALKAN PESANAN / AJUKAN PEMBATALAN
+       ======================================================== -->
+  <dialog id="modal-cancel-order" class="custom-modal" style="max-width: 560px;">
+    <div class="modal-header">
+      <h3 id="cancel-modal-title">Batalkan Pesanan</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-cancel-order').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cancel-modal-info" style="font-size:0.84rem; border-radius:8px; padding:10px 12px; margin-bottom:14px;"></div>
+      <label class="form-label">Pilih alasan pembatalan <span class="req">*</span></label>
+      <div id="cancel-reason-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
+      <div class="form-group" id="cancel-detail-wrap">
+        <label class="form-label" for="cancel-detail" id="cancel-detail-label">Keterangan tambahan (opsional)</label>
+        <textarea id="cancel-detail" class="form-control" rows="3" maxlength="300" placeholder="Tuliskan alasan Anda di sini..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-cancel-order').close()">Kembali</button>
+      <button type="button" id="btn-cancel-submit" class="btn-action btn-action-primary" style="background:#B91C1C;">Kirim Pembatalan</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 3: DETAIL STRUK / INVOICE
+       ======================================================== -->
+  <dialog id="modal-invoice-detail" class="custom-modal" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3>Detail Invoice Pesanan</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-invoice-detail').close()">✕</button>
+    </div>
+    <div class="modal-body" id="invoice-modal-content">
+      <!-- Dimuat oleh JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-action btn-action-secondary"
+        onclick="document.getElementById('modal-invoice-detail').close()">Tutup</button>
+      <button type="button" id="btn-print-single-invoice" class="btn-action btn-action-primary">🖨️ Cetak Invoice
+        Ini</button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL 4: DETAIL PRODUK (POPUP DESKRIPSI)
+       ======================================================== -->
+  <dialog id="modal-product-detail" class="custom-modal">
+    <div class="modal-header">
+      <h3 id="detail-prod-title">Detail Produk</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-product-detail').close()">✕</button>
+    </div>
+    <div class="modal-body" id="detail-prod-content">
+      <!-- Dimuat oleh JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-action btn-action-secondary"
+        onclick="document.getElementById('modal-product-detail').close()">Tutup</button>
+      <button type="button" id="detail-prod-add-btn" class="btn-action btn-action-primary">+ Tambah ke
+        Keranjang</button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL 5: CHECKOUT SUKSES
+       ======================================================== -->
+  <dialog id="modal-checkout-success" class="custom-modal">
+    <div class="modal-header" style="background-color: var(--badge-selesai-bg); color: var(--badge-selesai-text);">
+      <h3>🎉 Pesanan Berhasil Dibuat!</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-checkout-success').close()">✕</button>
+    </div>
+    <div class="modal-body" id="checkout-success-body">
+      <!-- Dimuat oleh JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="btn-go-to-myorders" class="btn-action btn-action-primary">
+        📦 Lihat di Pesanan Saya
+      </button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       FOOTER TOKO UMKM
+       ======================================================== -->
+  <footer class="main-footer">
+    <div class="footer-container">
+      <div>
+        <strong style="color: var(--primary);">Toko Nusantara Tobacco</strong> &copy; 2026. Hak Cipta Dilindungi.<br>
+        <span style="font-size: 0.78rem;">Sistem Informasi Penjualan Tembakau & Manajemen Stok Berbasis Web (Tugas Akhir
+          / Skripsi Sistem Informasi).</span>
+      </div>
+      <div>
+        <a href="/login.html" class="footer-link-admin">
+          🔒 Portal Staf / Admin ↗
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Logika Toko Pelanggan -->
+  <script src="form-helpers.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

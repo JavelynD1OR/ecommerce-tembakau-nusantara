@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Toko Nusantara Tobacco</title>
+  <meta name="description" content="Dashboard Administrator dan Manajemen Stok Toko Nusantara Tobacco">
+  <!-- Favicon Logo Tembakau Nusantara (Anti Cache) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=tobacco2">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=tobacco2">
+  <link rel="shortcut icon" href="/favicon.ico?v=tobacco2">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================================
+       DASHBOARD SIDEBAR LAYOUT KHUSUS ADMINISTRATOR
+       ======================================================== */
+    body {
+      background-color: #F4F3EF;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .admin-layout-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar Kiri */
+    .admin-sidebar {
+      width: 260px;
+      background-color: #26160A;
+      color: #EDE7E1;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      border-right: 1px solid #3E2718;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+    }
+
+    .sidebar-header {
+      padding: 22px 20px;
+      border-bottom: 1px solid #382214;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-icon {
+      width: 40px;
+      height: 40px;
+      background-color: var(--primary);
+      color: #FFF;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand-text h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #FFF;
+      line-height: 1.2;
+    }
+
+    .sidebar-brand-text p {
+      font-size: 0.72rem;
+      color: #C2B3A4;
+    }
+
+    .sidebar-menu {
+      padding: 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #9E8875;
+      padding: 10px 12px 4px 12px;
+      font-weight: 700;
+    }
+
+    .sidebar-nav-btn {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 1px solid transparent;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      color: #D6CBC1;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .sidebar-nav-btn:hover {
+      background-color: #382214;
+      color: #FFF;
+    }
+
+    .sidebar-nav-btn.active {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .sidebar-nav-btn a {
+      color: inherit;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid #382214;
+      background-color: #1F1107;
+    }
+
+    .admin-profile-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .admin-avatar {
+      width: 34px;
+      height: 34px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    /* Area Konten Utama */
+    .admin-main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .admin-topbar {
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .admin-topbar-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .admin-topbar-title p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .admin-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .admin-page-body {
+      padding: 24px 28px 60px 28px;
+      flex: 1;
+    }
+
+    .admin-section {
+      display: none;
+    }
+
+    .admin-section.active {
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout-container {
+        flex-direction: column;
+      }
+      .admin-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+      .admin-main-content {
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Proteksi Awal Login Admin -->
+  <script>
+    if (!localStorage.getItem('nusantara_admin_token')) {
+      window.location.href = '/login.html';
+    }
+  </script>
+
+  <div class="admin-layout-container">
+    <!-- ========================================================
+         SIDEBAR KIRI KHUSUS ADMINISTRATOR
+         ======================================================== -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-header">
+        <img src="/favicon.svg" alt="Logo Tembakau Nusantara" style="width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.35);">
+        <div class="sidebar-brand-text">
+          <h2>Nusantara Tobacco</h2>
+          <p>Back-Office Administrator</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="sidebar-section-title">Menu Utama</div>
+        <button type="button" class="sidebar-nav-btn active" id="menu-btn-dashboard">
+          <span>📊</span>
+          <span>Ringkasan Dashboard</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" id="menu-btn-products">
+          <span>📦</span>
+          <span>Manajemen Produk & Stok</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" id="menu-btn-orders">
+          <span>📑</span>
+          <span>Pesanan Masuk</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" id="menu-btn-reports">
+          <span>🖨️</span>
+          <span>Laporan Penjualan (PDF)</span>
+        </button>
+
+        <div class="sidebar-section-title" style="margin-top: 14px;">Navigasi Eksternal</div>
+        <a href="/" target="_blank" class="sidebar-nav-btn" style="text-decoration: none;">
+          <span>🛍️</span>
+          <span>Lihat Toko Publik ↗</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="admin-profile-card">
+          <div class="admin-avatar">A</div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #FFF;">Admin Toko</div>
+            <div style="font-size: 0.72rem; color: #34D399;">● Online (Terverifikasi)</div>
+          </div>
+        </div>
+        <button type="button" id="btn-logout-sidebar" class="btn-action btn-action-danger" style="width: 100%; justify-content: center; font-size: 0.82rem; padding: 7px;">
+          🚪 Keluar / Logout
+        </button>
+      </div>
+    </aside>
+
+
+    <!-- ========================================================
+         AREA KONTEN UTAMA
+         ======================================================== -->
+    <div class="admin-main-content">
+      <!-- Topbar Admin -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-title">
+          <h1 id="page-heading-title">Ringkasan Dashboard Toko</h1>
+          <p id="page-heading-sub">Monitoring stok fisik tembakau, transaksi aktif, dan rekapitulasi penjualan.</p>
+        </div>
+        <div class="admin-topbar-actions">
+          <span style="font-size: 0.82rem; color: var(--text-muted); background: var(--surface-alt); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);" id="admin-clock">
+            📅 Memuat waktu...
+          </span>
+          <button id="btn-quick-print" class="btn-action btn-action-secondary" style="font-size: 0.82rem; padding: 6px 14px;">
+            🖨️ Cetak Rekap
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-page-body">
+
+        <!-- ========================================================
+             SECTION 1: RINGKASAN DASHBOARD (METRIK & TRANSAKSI TERAKHIR)
+             ======================================================== -->
+        <section id="section-dashboard" class="admin-section active">
+          <!-- 4 Kartu Metrik Statistik -->
+          <div id="dash-cancel-alert" style="display:none; background:#FEE2E2; border:1px solid #FCA5A5; color:#991B1B; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:0.9rem; align-items:center; justify-content:space-between; gap:12px;"></div>
+          <div class="admin-stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">📦</div>
+              <div class="stat-details">
+                <div class="stat-val" id="dash-stat-products">0</div>
+                <div class="stat-label">Total Varian Produk</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-details">
+                <div class="stat-val" id="dash-stat-stock">0 pcs</div>
+                <div class="stat-label">Total Stok Gudang</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🧾</div>
+              <div class="stat-details">
+                <div class="stat-val" id="dash-stat-orders">0</div>
+                <div class="stat-label">Pesanan Masuk</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">💰</div>
+              <div class="stat-details">
+                <div class="stat-val" id="dash-stat-revenue">Rp 0</div>
+                <div class="stat-label">Total Pendapatan / Omzet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabel Transaksi Terbaru -->
+          <div class="checkout-card" style="padding: 0; overflow: hidden; margin-top: 10px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--primary);">📋 5 Transaksi Pesanan Terbaru</h3>
+              <button class="btn-action btn-action-secondary" onclick="window.navToOrders()" style="font-size: 0.78rem;">
+                Lihat Semua Pesanan →
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>No. Invoice</th>
+                    <th>Waktu</th>
+                    <th>Pelanggan</th>
+                    <th>Kurir & Ongkir</th>
+                    <th>Total Bayar</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-table-recent-orders">
+                  <!-- Dimuat secara dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ========================================================
+             SECTION 2: MANAJEMEN PRODUK & STOK (CRUD)
+             ======================================================== -->
+        <section id="section-products" class="admin-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="prod-search-input" class="search-input" placeholder="Cari nama atau kode SKU..." style="max-width: 250px;">
+              <select id="prod-category-filter" class="form-control" style="width: auto; padding: 7px 10px; font-size: 0.85rem;">
+                <option value="Semua">Semua Kategori</option>
+                <option value="Tembakau Nusantara">Tembakau Nusantara</option>
+                <option value="Tembakau Flavour">Tembakau Flavour</option>
+                <option value="Alat Linting">Alat Linting</option>
+                <option value="Paket Bundling">Paket Bundling</option>
+              </select>
+            </div>
+            <button id="btn-open-add-product" class="btn-action btn-action-primary" style="padding: 8px 16px;">
+              ➕ Tambah Produk Baru
+            </button>
+          </div>
+
+          <div class="checkout-card" style="padding: 0; overflow: hidden;">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">No</th>
+                    <th>Kode SKU</th>
+                    <th>Foto</th>
+                    <th>Nama Produk & Karakteristik</th>
+                    <th>Kategori</th>
+                    <th>Berat</th>
+                    <th>Harga Jual</th>
+                    <th>Stok Gudang</th>
+                    <th style="text-align: center; width: 140px;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-products-table-body">
+                  <!-- Dimuat oleh JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ========================================================
+             SECTION 3: MANAJEMEN PESANAN MASUK & STATUS RESI
+             ======================================================== -->
+        <section id="section-orders" class="admin-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div class="category-tabs" id="order-status-tabs">
+              <button class="tab-btn active" data-status="Semua">Semua</button>
+              <button class="tab-btn" data-status="Pengajuan Batal" style="color:#B91C1C; font-weight:700;">⚠ Pengajuan Batal</button>
+              <button class="tab-btn" data-status="Menunggu Pembayaran">Menunggu Pembayaran</button>
+              <button class="tab-btn" data-status="Diproses">Diproses</button>
+              <button class="tab-btn" data-status="Dikirim">Dikirim</button>
+              <button class="tab-btn" data-status="Selesai">Selesai</button>
+              <button class="tab-btn" data-status="Kedaluwarsa">Kedaluwarsa/Batal</button>
+            </div>
+            <input type="text" id="order-search-input" class="search-input" placeholder="Cari invoice / pelanggan..." style="max-width: 250px;">
+          </div>
+
+          <div class="checkout-card" style="padding: 0; overflow: hidden;">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>No. Invoice</th>
+                    <th>Waktu Transaksi</th>
+                    <th>Pelanggan & HP</th>
+                    <th>Kurir & Alamat</th>
+                    <th>Rincian Item</th>
+                    <th>Total Bayar</th>
+                    <th>Status</th>
+                    <th>Nomor Resi</th>
+                    <th style="text-align: center; width: 140px;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-orders-table-body">
+                  <!-- Dimuat oleh JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ========================================================
+             SECTION 4: LAPORAN PENJUALAN
+             ======================================================== -->
+        <section id="section-reports" class="admin-section">
+          <div class="checkout-card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h3 style="font-size: 1.15rem; color: var(--primary); font-weight: 700;">Rekapitulasi Laporan Penjualan</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+                  Laporan resmi penjualan Toko Nusantara Tobacco yang siap dicetak untuk kebutuhan sidang Tugas Akhir/Skripsi.
+                </p>
+              </div>
+              <button id="btn-print-report-action" class="btn-action btn-action-primary" style="padding: 10px 20px;">
+                🖨️ Cetak Laporan (Print / PDF)
+              </button>
+            </div>
+          </div>
+
+          <div class="checkout-card" style="padding: 0; overflow: hidden;">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>No. Invoice</th>
+                    <th>Tanggal</th>
+                    <th>Nama Pelanggan</th>
+                    <th>Kurir</th>
+                    <th>Items Terjual</th>
+                    <th style="text-align: right;">Total Bayar</th>
+                    <th style="text-align: center;">Status</th>
+                    <th>No. Resi</th>
+                  </tr>
+                </thead>
+                <tbody id="report-table-body">
+                  <!-- Dimuat secara dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL 1: TAMBAH / EDIT PRODUK (CRUD)
+       ======================================================== -->
+  <dialog id="modal-product" class="custom-modal">
+    <div class="modal-header">
+      <h3 id="modal-product-title">Tambah Produk Baru</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-product').close()">✕</button>
+    </div>
+    <form id="form-product">
+      <input type="hidden" id="prod-id">
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="prod-kode">Kode Produk</label>
+            <input type="text" id="prod-kode" class="form-control" placeholder="Auto / misal: TMB-005">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prod-nama">Nama Produk <span class="req">*</span></label>
+            <input type="text" id="prod-nama" class="form-control" placeholder="Nama lengkap produk" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="prod-kategori">Kategori <span class="req">*</span></label>
+            <select id="prod-kategori" class="form-control" required>
+              <option value="Tembakau Nusantara">Tembakau Nusantara</option>
+              <option value="Tembakau Flavour">Tembakau Flavour</option>
+              <option value="Alat Linting">Alat Linting</option>
+              <option value="Paket Bundling">Paket Bundling</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prod-berat">Berat (Gram) <span class="req">*</span></label>
+            <input type="number" id="prod-berat" class="form-control" placeholder="1000" min="1" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prod-karakteristik">Karakteristik Rasa / Spesifikasi</label>
+          <input type="text" id="prod-karakteristik" class="form-control" placeholder="Contoh: Medium - Gurih Manis / Stainless 110mm">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="prod-harga">Harga Jual (Rp) <span class="req">*</span></label>
+            <input type="number" id="prod-harga" class="form-control" placeholder="25000" min="1000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prod-stok">Jumlah Stok Gudang <span class="req">*</span></label>
+            <input type="number" id="prod-stok" class="form-control" placeholder="20" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prod-gambar-file">Foto Produk <span class="req">*</span></label>
+          
+          <!-- Box Upload File Foto Interaktif -->
+          <div class="file-upload-box" id="prod-dropzone">
+            <input type="file" id="prod-gambar-file" accept="image/png, image/jpeg, image/jpg, image/webp" style="display: none;">
+            <div style="font-size: 2.2rem; margin-bottom: 6px;">📷</div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.92rem; margin-bottom: 4px;">
+              Pilih Foto Produk dari Perangkat / Komputer
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">
+              Format didukung: JPG, PNG, WEBP (Maksimal 5MB)
+            </div>
+            <button type="button" class="btn-action btn-action-secondary" id="btn-browse-image" style="font-size: 0.82rem; padding: 6px 16px; background: #FFF;">
+              📁 Telusuri File Foto...
+            </button>
+          </div>
+
+          <!-- Preview Foto yang Sedang Terpilih -->
+          <div id="prod-preview-container" style="margin-top: 10px; display: flex; align-items: center; gap: 14px; background: var(--surface-alt); padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border-color);">
+            <img id="prod-gambar-preview" src="/images/temanggung_srinthil.jpg" alt="Preview Foto Produk" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color); background: #FFF; flex-shrink: 0;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 700; font-size: 0.84rem; color: var(--text-main); word-break: break-all;" id="prod-preview-filename">
+                temanggung_srinthil.jpg
+              </div>
+              <div style="font-size: 0.76rem; color: #059669; font-weight: 600; margin-top: 2px;" id="prod-preview-status">
+                ✓ Foto produk terpasang
+              </div>
+            </div>
+            <button type="button" id="btn-trigger-reupload" class="btn-action btn-action-secondary" style="font-size: 0.76rem; padding: 5px 10px;" title="Ganti file foto">
+              🔄 Ganti File
+            </button>
+          </div>
+
+          <!-- Hidden input untuk menyimpan path URL foto yang dihasilkan dari upload -->
+          <input type="hidden" id="prod-gambar" value="/images/temanggung_srinthil.jpg">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prod-deskripsi">Deskripsi Lengkap Produk</label>
+          <textarea id="prod-deskripsi" class="form-control" placeholder="Ulasan detail rasa, aroma, dan keunggulan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-product').close()">Batal</button>
+        <button type="submit" class="btn-action btn-action-primary">Simpan Data Produk</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL 2: UPDATE STATUS & RESI PESANAN
+       ======================================================== -->
+  <dialog id="modal-status" class="custom-modal">
+    <div class="modal-header">
+      <h3>Update Status & Resi Pesanan</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-status').close()">✕</button>
+    </div>
+    <form id="form-status">
+      <input type="hidden" id="status-order-id">
+      <div class="modal-body">
+        <div style="background-color: var(--surface-alt); padding: 12px; border-radius: var(--radius); margin-bottom: 14px; border: 1px solid var(--border-color); font-size: 0.85rem;">
+          <div><strong>No. Invoice:</strong> <span id="status-invoice-val">-</span></div>
+          <div><strong>Pelanggan:</strong> <span id="status-customer-val">-</span></div>
+          <div><strong>Kurir Pengiriman:</strong> <span id="status-courier-val">-</span></div>
+        </div>
+
+        <div id="status-cancel-box" style="display:none;"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="status-select-val">Status Pesanan</label>
+          <select id="status-select-val" class="form-control" required>
+            <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Dikirim">Dikirim</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Dibatalkan">Dibatalkan (stok dikembalikan)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="status-resi-val">Nomor Resi Ekspedisi Pengiriman</label>
+          <input type="text" id="status-resi-val" class="form-control" placeholder="Contoh: JNE88291039401">
+          <small style="color: var(--text-muted); font-size: 0.78rem;">Kosongkan jika pesanan metode Ambil di Toko.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-status').close()">Batal</button>
+        <button type="submit" class="btn-action btn-action-primary">Simpan Perubahan</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <!-- ========================================================
+       MODAL 3: DETAIL INVOICE PESANAN
+       ======================================================== -->
+  <dialog id="modal-invoice-detail" class="custom-modal" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3>Detail Invoice Pesanan</h3>
+      <button class="btn-close-modal" onclick="document.getElementById('modal-invoice-detail').close()">✕</button>
+    </div>
+    <div class="modal-body" id="invoice-modal-content">
+      <!-- Dimuat oleh JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-invoice-detail').close()">Tutup</button>
+      <button type="button" id="btn-print-single-invoice" class="btn-action btn-action-primary">🖨️ Cetak Struk</button>
+    </div>
+  </dialog>
+
+
+  <!-- ========================================================
+       AREA CETAK LAPORAN RESMI (@media print)
+       ======================================================== -->
+  <section id="print-report-area">
+    <div class="kop-surat">
+      <h2>TOKO NUSANTARA TOBACCO</h2>
+      <p>Sistem Informasi Penjualan Tembakau dan Alat Linting serta Manajemen Stok Berbasis Web</p>
+      <p>Alamat: Jl. Malioboro No. 45, D.I. Yogyakarta | Kontak: 0812-3456-7890 | Website: nusantaratobacco.com</p>
+    </div>
+
+    <div class="report-title-box">
+      <h3>LAPORAN REKAPITULASI PENJUALAN & TRANSAKSI</h3>
+      <p style="font-size: 10pt;" id="print-report-date">Dicetak pada: -</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 10pt;">
+      <div><strong>Status Data:</strong> Seluruh Pesanan Masuk</div>
+      <div><strong>Total Pendapatan (Omzet):</strong> <span id="print-total-revenue">Rp 0</span></div>
+    </div>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>No. Invoice</th>
+          <th>Tanggal</th>
+          <th>Pelanggan</th>
+          <th>No. HP</th>
+          <th>Kurir</th>
+          <th>Items Terjual</th>
+          <th>Total Bayar</th>
+          <th>Status</th>
+          <th>No. Resi</th>
+        </tr>
+      </thead>
+      <tbody id="print-report-table-body">
+        <!-- Dimuat oleh JavaScript -->
+      </tbody>
+    </table>
+
+    <div class="signature-box">
+      <div class="signature-inner">
+        <p>Yogyakarta, <span id="print-signature-date">-</span></p>
+        <p>Mengetahui,</p>
+        <p style="margin-top: 8px;"><strong>Pemilik Toko Nusantara Tobacco</strong></p>
+        <div style="height: 60px;"></div>
+        <p style="text-decoration: underline; font-weight: bold;">( H. Hendrawan Suprayitno )</p>
+        <p style="font-size: 9pt;">Owner & Pengelola Toko</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Script Admin Terpisah -->
+  <script src="admin.js"></script>
+</body>
+</html>

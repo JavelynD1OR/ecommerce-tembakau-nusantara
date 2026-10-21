@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Background Gradient: Rich Artisan Tobacco Brown -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3D2314"/>
+      <stop offset="100%" stop-color="#1A0E07"/>
+    </linearGradient>
+    
+    <!-- Tobacco Leaf Gradient: Golden Cured Amber to Warm Brown -->
+    <linearGradient id="leafGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="45%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#8B4513"/>
+    </linearGradient>
+
+    <!-- Leaf Vein Stroke Gradient -->
+    <linearGradient id="veinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#78350F" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Inner Shadow / Glow -->
+    <filter id="leafShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Container: Pops on light & dark browser tabs -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bgGrad)" stroke="#8B5A2B" stroke-width="2"/>
+  
+  <!-- Subtle Vintage Border Inset -->
+  <rect x="5" y="5" width="54" height="54" rx="11" fill="none" stroke="#D97706" stroke-width="0.8" stroke-dasharray="2 1.5" stroke-opacity="0.5"/>
+
+  <!-- Tobacco Leaf Shape (Organic Nicotiana Tabacum Leaf) -->
+  <g filter="url(#leafShadow)">
+    <!-- Leaf Body -->
+    <path d="M 32 8
+             C 42 16, 52 26, 48 41
+             C 45 51, 37 54, 33 55
+             L 32 58
+             L 31 55
+             C 27 54, 19 51, 16 41
+             C 12 26, 22 16, 32 8 Z" 
+          fill="url(#leafGrad)" 
+          stroke="#5C2E0B" 
+          stroke-width="1.2"
+          stroke-linejoin="round"/>
+
+    <!-- Left Leaf Highlights (gives cured texture) -->
+    <path d="M 32 10
+             C 38 17, 46 26, 43 39
+             C 41 47, 35 50, 32 52 Z"
+          fill="#FBBF24"
+          fill-opacity="0.25"/>
+
+    <!-- Central Midrib (Main Stem) -->
+    <path d="M 32 11 Q 32.5 34 32 58" 
+          stroke="url(#veinGrad)" 
+          stroke-width="2" 
+          stroke-linecap="round"/>
+
+    <!-- Lateral Secondary Veins (Right Side) -->
+    <path d="M 32 20 Q 38 22 43 25" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 27 Q 40 30 45 35" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 35 Q 39 39 42 45" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 43 Q 36 46 38 50" stroke="#78350F" stroke-width="1.1" stroke-linecap="round" stroke-opacity="0.7"/>
+
+    <!-- Lateral Secondary Veins (Left Side) -->
+    <path d="M 32 20 Q 26 22 21 25" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 27 Q 24 30 19 35" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 35 Q 25 39 22 45" stroke="#78350F" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <path d="M 32 43 Q 28 46 26 50" stroke="#78350F" stroke-width="1.1" stroke-linecap="round" stroke-opacity="0.7"/>
+  </g>
+
+  <!-- Tiny Golden Star / Authenticity Accent -->
+  <circle cx="32" cy="7" r="1.5" fill="#FDE68A"/>
+</svg>

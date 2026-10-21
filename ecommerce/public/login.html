@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk Akun - Toko Nusantara Tobacco</title>
+  <meta name="description"
+    content="Pusat Login & Registrasi Terpadu Toko Nusantara Tobacco - Pelanggan & Administrator">
+  <!-- Favicon Logo Tembakau Nusantara (Anti Cache) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=tobacco2">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=tobacco2">
+  <link rel="shortcut icon" href="/favicon.ico?v=tobacco2">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Styling Halaman Login Terpusat */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-main);
+    }
+
+    .login-page-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    .auth-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .role-switcher {
+      display: flex;
+      background-color: var(--surface-alt);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 22px;
+      gap: 4px;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: none;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .role-btn.active {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-alert-box {
+      background-color: #FEE2E2;
+      border: 1px solid #FCA5A5;
+      color: #991B1B;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 0.84rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Top Simple Bar -->
+  <header class="top-notice-bar">
+    <div class="notice-warning">
+      <span class="notice-pill">18+</span>
+      <span>Toko Nusantara Tobacco - Sistem Informasi Penjualan Tembakau & Manajemen Stok</span>
+    </div>
+    <div class="notice-info">
+      <span>📍 Yogyakarta</span>
+      <span>💬 WA: 0812-3456-7890</span>
+    </div>
+  </header>
+
+  <div class="login-page-container">
+    <div class="auth-card">
+      <!-- Logo & Branding -->
+      <div style="text-align: center; margin-bottom: 22px;">
+        <img src="/favicon.svg" alt="Logo Tembakau Nusantara"
+          style="width: 52px; height: 52px; border-radius: 12px; display: inline-block; margin-bottom: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.25);">
+        <h1 style="font-size: 1.35rem; color: var(--primary); font-weight: 700; line-height: 1.2;">Nusantara Tobacco
+        </h1>
+        <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 3px;">Pusat Otentikasi Pelanggan &
+          Administrator</p>
+      </div>
+
+      <!-- Role Switcher: Pelanggan vs Admin -->
+      <div class="role-switcher">
+        <button type="button" id="role-tab-customer" class="role-btn active">
+          👤 Pelanggan
+        </button>
+        <button type="button" id="role-tab-admin" class="role-btn">
+          🛡️ Pengelola / Admin
+        </button>
+      </div>
+
+      <!-- Pesan Error Dinamis -->
+      <div id="auth-error-box" class="auth-alert-box"></div>
+
+      <!-- ========================================================
+           BAGIAN 1: FORM LOGIN & DAFTAR PELANGGAN
+           ======================================================== -->
+      <div id="panel-customer-auth">
+        <!-- Tombol Google asli (Google Identity Services) - tampil hanya jika GOOGLE_CLIENT_ID diisi di server -->
+        <div id="google-signin-slot" style="display: none;">
+          <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
+        <div style="display: flex; align-items: center; margin: 18px 0; gap: 10px;">
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">atau gunakan email</span>
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+        </div>
+
+        <!-- Sub-Pilihan: Masuk vs Daftar Akun Baru -->
+        <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+          <button type="button" id="cust-subtab-login" class="tab-btn active" style="flex: 1;">Masuk</button>
+          <button type="button" id="cust-subtab-register" class="tab-btn" style="flex: 1;">Daftar Akun Baru</button>
+        </div>
+
+        <!-- Form Masuk Pelanggan Email -->
+        <form id="form-cust-login">
+          <div class="form-group">
+            <label class="form-label" for="cust-email">Email</label>
+            <input type="email" id="cust-email" class="form-control" placeholder="nama@email.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cust-password">Password</label>
+            <input type="password" id="cust-password" class="form-control" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-primary-block" style="padding: 11px;">
+            Masuk & Mulai Belanja
+          </button>
+        </form>
+
+        <!-- Form Daftar Pelanggan Baru -->
+        <form id="form-cust-register" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="reg-nama">Nama Lengkap <span class="req">*</span></label>
+            <input type="text" id="reg-nama" class="form-control" placeholder="Nama sesuai KTP" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Email Aktif <span class="req">*</span></label>
+            <input type="email" id="reg-email" class="form-control" placeholder="nama@email.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-hp">Nomor WhatsApp <span class="req">*</span></label>
+            <input type="tel" id="reg-hp" class="form-control" placeholder="081234567890" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-addr-jalan">Nama Jalan / Gedung / No. Rumah / Patokan <span class="req">*</span></label>
+            <input type="text" id="reg-addr-jalan" class="form-control" placeholder="Contoh: Jl. Malioboro No. 45, Seberang Toko Batik" required>
+          </div>
+          <div class="form-row-two">
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-rtrw">RT / RW <span class="req">*</span></label>
+              <input type="text" id="reg-addr-rtrw" class="form-control" placeholder="Contoh: 002/005" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-kelurahan">Desa / Kelurahan <span class="req">*</span></label>
+              <input type="text" id="reg-addr-kelurahan" class="form-control" placeholder="Contoh: Sosromenduran" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-kecamatan">Kecamatan <span class="req">*</span></label>
+              <input type="text" id="reg-addr-kecamatan" class="form-control" placeholder="Contoh: Gedong Tengen" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-kota">Kota / Kabupaten <span class="req">*</span></label>
+              <input type="text" id="reg-addr-kota" class="form-control" placeholder="Contoh: Kota Yogyakarta" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-provinsi">Provinsi <span class="req">*</span></label>
+              <input type="text" id="reg-addr-provinsi" class="form-control" placeholder="Contoh: D.I. Yogyakarta" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-addr-kodepos">Kode Pos <span class="req">*</span></label>
+              <input type="text" id="reg-addr-kodepos" class="form-control" placeholder="5 digit, contoh: 55271" maxlength="5" inputmode="numeric" pattern="[0-9]{5}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-pass">Password <span class="req">*</span></label>
+            <input type="password" id="reg-pass" class="form-control" placeholder="Minimal 8 karakter" required
+              minlength="8" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-pass2">Konfirmasi Password <span class="req">*</span></label>
+            <input type="password" id="reg-pass2" class="form-control" placeholder="Ketik ulang password" required minlength="8" autocomplete="new-password">
+            <span id="reg-pass-hint" class="pw-match-hint"></span>
+          </div>
+          <button type="submit" class="btn-primary-block" style="padding: 11px;">
+            Daftarkan Akun Pelanggan
+          </button>
+        </form>
+      </div>
+
+
+      <!-- ========================================================
+           BAGIAN 2: FORM LOGIN ADMINISTRATOR (BACK-OFFICE)
+           ======================================================== -->
+      <div id="panel-admin-auth" style="display: none;">
+        <form id="form-admin-login">
+          <div class="form-group">
+            <label class="form-label" for="admin-username">Username Administrator</label>
+            <input type="text" id="admin-username" class="form-control" placeholder="Masukkan username" required
+              autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="admin-password">Password Administrator</label>
+            <input type="password" id="admin-password" class="form-control" placeholder="Masukkan password" required
+              autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary-block" style="padding: 11px;">
+            🔒 Masuk ke Dashboard Admin
+          </button>
+        </form>
+      </div>
+
+      <!-- Navigasi Bawah -->
+      <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+        <a href="/" style="font-size: 0.84rem; color: var(--primary); text-decoration: none; font-weight: 500;">
+          ← Kembali ke Katalog Toko
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ambil parameter redirect jika ada
+      const urlParams = new URLSearchParams(window.location.search);
+      let redirectTarget = urlParams.get('redirect') || '/index.html';
+      if (!/^\/(?!\/)/.test(redirectTarget)) redirectTarget = '/index.html'; // hanya path internal
+
+      const tabCust = document.getElementById('role-tab-customer');
+      const tabAdmin = document.getElementById('role-tab-admin');
+      const panelCust = document.getElementById('panel-customer-auth');
+      const panelAdmin = document.getElementById('panel-admin-auth');
+      const errorBox = document.getElementById('auth-error-box');
+
+      function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+      }
+
+      function clearError() {
+        errorBox.style.display = 'none';
+        errorBox.textContent = '';
+      }
+
+      // Role Tab Toggle
+      tabCust.addEventListener('click', () => {
+        clearError();
+        tabCust.classList.add('active');
+        tabAdmin.classList.remove('active');
+        panelCust.style.display = 'block';
+        panelAdmin.style.display = 'none';
+      });
+
+      tabAdmin.addEventListener('click', () => {
+        clearError();
+        tabAdmin.classList.add('active');
+        tabCust.classList.remove('active');
+        panelAdmin.style.display = 'block';
+        panelCust.style.display = 'none';
+      });
+
+      // Sub-tab Pelanggan: Masuk vs Daftar
+      const subLogin = document.getElementById('cust-subtab-login');
+      const subReg = document.getElementById('cust-subtab-register');
+      const formCustLogin = document.getElementById('form-cust-login');
+      const formCustReg = document.getElementById('form-cust-register');
+
+      subLogin.addEventListener('click', () => {
+        clearError();
+        subLogin.classList.add('active');
+        subReg.classList.remove('active');
+        formCustLogin.style.display = 'block';
+        formCustReg.style.display = 'none';
+      });
+
+      subReg.addEventListener('click', () => {
+        clearError();
+        subReg.classList.add('active');
+        subLogin.classList.remove('active');
+        formCustReg.style.display = 'block';
+        formCustLogin.style.display = 'none';
+      });
+
+      // Login Google asli (Google Identity Services) - token diverifikasi di server
+      async function handleGoogleAuth(credential) {
+        clearError();
+        try {
+          const res = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential })
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+
+          localStorage.setItem('nusantara_user', JSON.stringify(json.user));
+          localStorage.setItem('nusantara_user_token', json.token);
+          window.location.href = redirectTarget;
+        } catch (err) {
+          showError(err.message);
+        }
+      }
+
+      fetch('/api/config').then(r => r.json()).then(j => {
+        const cid = j.success && j.data.googleClientId;
+        if (!cid) return;
+        const sc = document.createElement('script');
+        sc.src = 'https://accounts.google.com/gsi/client';
+        sc.onload = () => {
+          window.google.accounts.id.initialize({ client_id: cid, callback: (r) => handleGoogleAuth(r.credential) });
+          window.google.accounts.id.renderButton(document.getElementById('google-signin-button'),
+            { theme: 'outline', size: 'large', width: 320, text: 'continue_with', locale: 'id' });
+          document.getElementById('google-signin-slot').style.display = 'block';
+        };
+        document.head.appendChild(sc);
+      }).catch(() => { });
+
+      // Form Login Email Pelanggan
+      formCustLogin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearError();
+        const email = document.getElementById('cust-email').value.trim();
+        const password = document.getElementById('cust-password').value.trim();
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+
+          localStorage.setItem('nusantara_user', JSON.stringify(json.user));
+          localStorage.setItem('nusantara_user_token', json.token);
+          window.location.href = redirectTarget;
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      NT.bindPasswordMatch('reg-pass', 'reg-pass2', 'reg-pass-hint');
+
+      // Form Register Pelanggan
+      formCustReg.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearError();
+        const av = NT.validateAddress('reg-addr');
+        if (!av.valid) { showError(av.message); return; }
+        const pw = document.getElementById('reg-pass').value;
+        if (pw.length < 8) { showError('Password minimal 8 karakter.'); return; }
+        if (pw !== document.getElementById('reg-pass2').value) {
+          showError('Konfirmasi password tidak sama. Periksa kembali.');
+          document.getElementById('reg-pass2').focus();
+          return;
+        }
+        const payload = {
+          nama: document.getElementById('reg-nama').value.trim(),
+          email: document.getElementById('reg-email').value.trim(),
+          password: pw,
+          no_hp: document.getElementById('reg-hp').value.trim(),
+          alamat: NT.combineAddress('reg-addr')
+        };
+
+        try {
+          const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+
+          localStorage.setItem('nusantara_user', JSON.stringify(json.user));
+          localStorage.setItem('nusantara_user_token', json.token);
+          window.location.href = redirectTarget;
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      // Form Login Admin -> Redirect ke /admin.html
+      document.getElementById('form-admin-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearError();
+        const username = document.getElementById('admin-username').value.trim();
+        const password = document.getElementById('admin-password').value.trim();
+
+        try {
+          const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+
+          localStorage.setItem('nusantara_admin_token', json.token);
+          window.location.href = '/admin.html';
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+    });
+  </script>
+  <script src="form-helpers.js"></script>
+</body>
+
+</html>
