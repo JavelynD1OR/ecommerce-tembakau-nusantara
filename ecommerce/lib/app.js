@@ -24,7 +24,7 @@ const db = require('./db');
 const ROOT = path.join(__dirname, '..');
 const IS_PROD = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 3000;
-const STORE_WA = (process.env.STORE_WHATSAPP || '6281234567890').replace(/\D/g, '');
+const STORE_WA = (process.env.STORE_WHATSAPP || '6285385490505').replace(/\D/g, '');
 const PAYMENT_WINDOW_MINUTES = Number(process.env.PAYMENT_WINDOW_MINUTES) || 180;
 const AUTO_COMPLETE_DAYS = Math.max(1, Number(process.env.AUTO_COMPLETE_DAYS) || 7);
 

@@ -1815,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="text-align: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
           <h2 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 2px;">TOKO NUSANTARA TOBACCO</h2>
           <p style="font-size: 0.8rem; color: var(--text-muted);">Pusat Tembakau Pilihan Nusantara & Alat Linting Tradisional</p>
-          <p style="font-size: 0.75rem; color: var(--text-muted);">Jl. Malioboro No. 45, D.I. Yogyakarta | WA: 0812-3456-7890</p>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Jl. Pramuka No.11, Jenang Utara, Jenang, Kec. Majenang, Kabupaten Cilacap, Jawa Tengah 53257 | WA: 0853-8549-0505</p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; margin-bottom: 14px;">
