@@ -985,14 +985,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // COD: "Bayar di Toko" hanya untuk Ambil di Toko; "COD ke Kurir" hanya untuk pengiriman.
+  // COD: "Bayar di Toko" hanya muncul bila kurir = Ambil di Toko.
   function syncCodOptions() {
     const ship = currentShipping();
     const pickup = ship.name === 'Ambil di Toko';
     const toko = document.getElementById('pay-opt-cod-toko');
-    const kurir = document.getElementById('pay-opt-cod-kurir');
     if (toko) toko.style.display = pickup ? '' : 'none';
-    if (kurir) kurir.style.display = pickup ? 'none' : '';
     const checked = document.querySelector('input[name="payment"]:checked');
     if (checked && /^cod_/.test(checked.value) && checked.closest('.radio-card').style.display === 'none') {
       const qris = document.querySelector('input[name="payment"][value="qris"]');
@@ -1351,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const toOrdersBtn = document.getElementById('btn-modal-to-myorders');
     if (toOrdersBtn) toOrdersBtn.style.display = 'inline-flex';
     document.getElementById('pay-warning-box')?.remove();
-    const pickup = String(order.kurir || '').startsWith('Ambil di Toko');
     const box = document.getElementById('payment-stage-actions');
     if (box) {
       box.innerHTML = `
@@ -1360,9 +1357,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size: 1.2rem;">✓</span> Pesanan COD Diterima!
           </div>
           <p style="font-size: 0.84rem; color: #047857; margin-bottom: 14px; line-height: 1.45;">
-            ${pickup
-              ? `Pesanan Anda berstatus <strong>Diproses</strong>. Silakan ambil di toko dan bayar tunai <strong>${formatRupiah(order.total_bayar)}</strong> saat pengambilan. Toko akan menghubungi Anda lewat WhatsApp bila pesanan sudah siap.`
-              : `Pesanan Anda berstatus <strong>Diproses</strong>. Siapkan uang tunai <strong>${formatRupiah(order.total_bayar)}</strong> (sudah termasuk ongkir) untuk dibayar ke kurir saat barang tiba.`}
+            Pesanan Anda berstatus <strong>Diproses</strong>. Silakan ambil di toko dan bayar tunai <strong>${formatRupiah(order.total_bayar)}</strong> saat pengambilan. Toko akan menghubungi Anda lewat WhatsApp bila pesanan sudah siap.
           </p>
           <a href="${storeContactUrl(order)}" target="_blank" rel="noopener noreferrer" class="btn-wa-owner">💬 Hubungi Toko via WhatsApp (opsional)</a>
         </div>
@@ -1812,7 +1807,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
                 Metode: <strong>${esc(order.metode_bayar)}</strong>
               </div>
-              ${order.payment_status === 'cod' ? `<div style="font-size:0.76rem; color:#92400E; margin:-6px 0 10px 0; line-height:1.4;">💵 Belum dibayar — bayar tunai ${String(order.kurir || '').startsWith('Ambil di Toko') ? 'di toko saat mengambil' : 'ke kurir saat barang tiba'}.</div>` : ''}
+              ${order.payment_status === 'cod' ? `<div style="font-size:0.76rem; color:#92400E; margin:-6px 0 10px 0; line-height:1.4;">💵 Belum dibayar — bayar tunai di toko saat mengambil.</div>` : ''}
               ${order.payment_status === 'pending' ? `
                 <button class="btn-action btn-action-primary" onclick="window.resumePayment('${esc(order.no_invoice)}')" style="width: 100%; justify-content: center; margin-bottom: 8px;">
                   💳 Bayar Sekarang

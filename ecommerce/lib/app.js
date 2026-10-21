@@ -132,9 +132,8 @@ const PAYMENT_METHODS = {
   va_mandiri: { label: 'Transfer Mandiri (Bill)',    enabled: ['echannel'] },
   va_permata: { label: 'Transfer Permata (VA)',      enabled: ['permata_va'] },
   semua:      { label: 'Metode lain (pilih di popup)', enabled: null },
-  // COD: tidak lewat Midtrans. 'only' membatasi pasangan dengan kurir.
-  cod_toko:   { label: 'Bayar di Toko (COD)',        enabled: null, cod: true, only: 'toko' },
-  cod_kurir:  { label: 'COD (Bayar ke Kurir)',       enabled: null, cod: true, only: 'kurir' }
+  // COD hanya untuk Ambil di Toko (bayar tunai di outlet). Tidak lewat Midtrans.
+  cod_toko:   { label: 'Bayar di Toko (COD)',        enabled: null, cod: true, only: 'toko' }
 };
 const isCodCode = (c) => Object.prototype.hasOwnProperty.call(PAYMENT_METHODS, String(c)) && !!PAYMENT_METHODS[String(c)].cod;
 
@@ -683,7 +682,6 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
     if (payMethod.cod) {
       const isPickup = kurirCode === 'Ambil di Toko';
       if (payMethod.only === 'toko' && !isPickup) throw new Error('"Bayar di Toko" hanya untuk pesanan Ambil di Toko.');
-      if (payMethod.only === 'kurir' && isPickup) throw new Error('COD ke kurir hanya untuk pesanan yang dikirim. Untuk ambil di toko pilih "Bayar di Toko".');
     }
     if (!rawItems.length || rawItems.length > 30) throw new Error('Keranjang kosong atau terlalu banyak item.');
 
@@ -729,7 +727,7 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
     });
 
     if (payMethod.cod) {
-      await notifyAdmin(`🛒 PESANAN COD BARU (bayar ${payMethod.only === 'toko' ? 'tunai di toko saat ambil' : 'ke kurir saat barang tiba'})\n${orderSummary(order)}`);
+      await notifyAdmin(`🛒 PESANAN COD BARU (bayar tunai di toko saat ambil)\n${orderSummary(order)}`);
       return res.status(201).json({ success: true, data: publicOrder(order), payment: null });
     }
 
