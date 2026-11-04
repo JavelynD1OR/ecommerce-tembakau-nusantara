@@ -1787,3 +1787,104 @@ dialog.custom-modal::backdrop {
   flex: 0 0 auto; min-width: 42px; height: 30px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center;
   border-radius: 6px; background: #5C3A21; color: #fff; font-weight: 800; font-size: 0.72rem; letter-spacing: .3px;
 }
+
+
+/* ========================================================
+   TAMPILAN MOBILE (HP) - penyesuaian layout
+   ======================================================== */
+html, body { max-width: 100%; }
+img, video { max-width: 100%; }
+
+@media (max-width: 768px) {
+  .top-notice-bar { padding: 6px 12px; font-size: 0.76rem; }
+  .notice-info { flex-wrap: wrap; gap: 2px 12px; }
+
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .brand-text h1 { font-size: 1.05rem; }
+  .brand-text p { font-size: 0.7rem; }
+
+  /* menu utama: 4 tombol sejajar di bawah logo */
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+  .main-nav .nav-link,
+  .main-nav .user-menu-wrapper > .nav-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    padding: 7px 2px;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+  .main-nav .user-menu-wrapper { min-width: 0; width: 100%; }
+  .main-nav .btn-user-chip { width: 100%; justify-content: center; padding: 6px 4px; font-size: 0.72rem; min-width: 0; }
+  .main-nav .btn-user-chip #user-display-name { max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-dropdown-menu { right: 0; left: auto; width: min(280px, calc(100vw - 24px)); }
+  .nav-link { position: relative; }
+  .nav-badge { position: absolute; top: 2px; right: 6px; padding: 0 5px; font-size: 0.62rem; }
+
+  .app-container { padding-left: 12px; padding-right: 12px; }
+  .checkout-card { padding: 14px; }
+}
+
+@media (max-width: 480px) {
+  .notice-warning { align-items: flex-start; }
+  .modal-content, dialog.modal { max-width: calc(100vw - 16px) !important; }
+}
+
+/* Mobile: kolom grid boleh mengecil + tabel tidak melebarkan halaman */
+@media (max-width: 900px) {
+  .checkout-layout { grid-template-columns: minmax(0, 1fr); }
+  .checkout-layout > * { min-width: 0; }
+}
+.table-responsive { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) {
+  .custom-table th, .custom-table td { padding: 8px 6px; font-size: 0.8rem; }
+  .checkout-card-header { flex-wrap: wrap; gap: 8px; }
+}
+
+/* Mobile: tabel keranjang jadi kartu per produk */
+@media (max-width: 640px) {
+  #cart-table, #cart-table tbody { display: block; width: 100%; }
+  #cart-table thead { display: none; }
+  #cart-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 10px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  #cart-table td { display: block; width: auto; padding: 0; border: 0; text-align: left !important; }
+  #cart-table td:nth-child(1) { grid-column: 1 / -1; }
+  #cart-table td:nth-child(3) { grid-column: 1; grid-row: 2; }
+  #cart-table td:nth-child(4) { grid-column: 2; grid-row: 2; text-align: right !important; font-size: 1rem; }
+  #cart-table td:nth-child(2) { grid-column: 1; grid-row: 3; font-size: 0.8rem; color: var(--text-muted); }
+  #cart-table td:nth-child(2)::before { content: 'Harga satuan: '; font-weight: 400; }
+  #cart-table td:nth-child(5) { grid-column: 2; grid-row: 3; text-align: right !important; }
+  #cart-table .cart-item-name { word-break: normal; overflow-wrap: anywhere; }
+}
+
+/* Mobile: kartu "Pesanan Saya" 1 kolom */
+@media (max-width: 640px) {
+  .order-card-body { grid-template-columns: minmax(0, 1fr) !important; gap: 12px !important; }
+  .order-card-side {
+    text-align: left !important;
+    border-left: 0 !important;
+    padding-left: 0 !important;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 12px;
+  }
+  .order-card-side .btn-action { margin-bottom: 8px; }
+}

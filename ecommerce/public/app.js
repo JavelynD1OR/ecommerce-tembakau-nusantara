@@ -1771,7 +1771,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+          <div class="order-card-body" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
             <div>
               <div style="font-size: 0.84rem; margin-bottom: 8px;">
                 <strong>Penerima:</strong> ${order.nama_pelanggan} (${order.no_hp})<br>
@@ -1799,7 +1799,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             </div>
 
-            <div style="text-align: right; border-left: 1px solid var(--border-color); padding-left: 20px;">
+            <div class="order-card-side" style="text-align: right; border-left: 1px solid var(--border-color); padding-left: 20px;">
               <div style="font-size: 0.8rem; color: var(--text-muted);">Total Pembayaran</div>
               <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin: 4px 0 12px 0;">
                 ${formatRupiah(order.total_bayar)}
