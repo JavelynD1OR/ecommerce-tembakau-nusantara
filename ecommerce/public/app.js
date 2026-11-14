@@ -425,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasPw = state.currentUser && state.currentUser.has_password !== false;
     document.getElementById('form-change-password').reset();
     document.getElementById('pw-error').style.display = 'none';
+    updatePwMeter();
     document.getElementById('pw-old-group').style.display = hasPw ? '' : 'none';
     document.getElementById('pw-old').required = !!hasPw;
     document.getElementById('pw-old-label').innerHTML = (forced ? 'Password Sementara (dari admin)' : 'Password Lama') + ' <span class="req">*</span>';
@@ -435,6 +436,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-pw-close').style.display = forced ? 'none' : '';
     pwModal.showModal();
   }
+  // Indikator kekuatan password: merah (belum memenuhi) / kuning (memenuhi aturan) / hijau (kuat)
+  function updatePwMeter() {
+    const v = document.getElementById('pw-new').value;
+    const rules = { len: v.length >= 8, alpha: /[A-Za-z]/.test(v), num: /[0-9]/.test(v) };
+    document.querySelectorAll('#pw-rules li').forEach(li => li.classList.toggle('ok', !!rules[li.dataset.rule]));
+    const meter = document.getElementById('pw-meter');
+    const label = document.getElementById('pw-meter-label');
+    let level = 0, text = 'Belum diisi';
+    if (v.length) {
+      if (!(rules.len && rules.alpha && rules.num)) { level = 1; text = 'Lemah — belum memenuhi aturan'; }
+      else {
+        const extra = (/[a-z]/.test(v) && /[A-Z]/.test(v)) || /[^A-Za-z0-9]/.test(v) || v.length >= 12;
+        if (extra) { level = 3; text = 'Kuat — sesuai aturan ✓'; } else { level = 2; text = 'Cukup — memenuhi aturan minimum'; }
+      }
+    }
+    meter.dataset.level = level;
+    label.textContent = text;
+  }
+  document.getElementById('pw-new')?.addEventListener('input', updatePwMeter);
+
   function closePasswordModal() { pwForced = false; pwModal.close(); }
   pwModal?.addEventListener('cancel', (e) => { if (pwForced) e.preventDefault(); });
   document.getElementById('btn-pw-close')?.addEventListener('click', closePasswordModal);

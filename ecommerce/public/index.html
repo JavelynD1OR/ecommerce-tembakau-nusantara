@@ -584,7 +584,15 @@
         <div class="form-group">
           <label class="form-label" for="pw-new">Password Baru <span class="req">*</span></label>
           <input type="password" id="pw-new" class="form-control" minlength="8" maxlength="72" required autocomplete="new-password">
-          <small style="color: var(--text-muted); font-size: 0.76rem;">Minimal 8 karakter, kombinasi huruf dan angka.</small>
+          <div class="pw-meter" id="pw-meter" data-level="0" aria-live="polite">
+            <div class="pw-meter-bars"><span></span><span></span><span></span></div>
+            <div class="pw-meter-label" id="pw-meter-label">Belum diisi</div>
+          </div>
+          <ul class="pw-rules" id="pw-rules">
+            <li data-rule="len">Minimal 8 karakter</li>
+            <li data-rule="alpha">Mengandung huruf</li>
+            <li data-rule="num">Mengandung angka</li>
+          </ul>
         </div>
         <div class="form-group">
           <label class="form-label" for="pw-new2">Ulangi Password Baru <span class="req">*</span></label>

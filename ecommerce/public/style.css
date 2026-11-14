@@ -1920,3 +1920,19 @@ img, video { max-width: 100%; }
 .btn-wa-proof:hover { background: #1EBE5A; }
 .pay-proof-hint { font-size: .76rem; color: var(--text-muted); margin-top: 8px; text-align: center; line-height: 1.5; }
 @media (max-width: 480px) { .pay-k { width: 80px; } .pay-amount { font-size: 1.3rem; } }
+
+/* ===== Indikator kekuatan password ===== */
+.pw-meter { margin-top: 8px; }
+.pw-meter-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pw-meter-bars span { height: 7px; border-radius: 4px; background: #E5E0D8; transition: background .2s; }
+.pw-meter[data-level="1"] .pw-meter-bars span:nth-child(1) { background: #DC2626; }
+.pw-meter[data-level="2"] .pw-meter-bars span:nth-child(-n+2) { background: #F59E0B; }
+.pw-meter[data-level="3"] .pw-meter-bars span { background: #16A34A; }
+.pw-meter-label { font-size: .78rem; font-weight: 700; margin-top: 5px; color: var(--text-muted); }
+.pw-meter[data-level="1"] .pw-meter-label { color: #DC2626; }
+.pw-meter[data-level="2"] .pw-meter-label { color: #B45309; }
+.pw-meter[data-level="3"] .pw-meter-label { color: #15803D; }
+.pw-rules { list-style: none; margin: 6px 0 0; padding: 0; font-size: .78rem; color: var(--text-muted); }
+.pw-rules li::before { content: '○'; display: inline-block; width: 18px; }
+.pw-rules li.ok { color: #15803D; }
+.pw-rules li.ok::before { content: '✓'; font-weight: 700; }
