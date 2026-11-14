@@ -121,6 +121,10 @@ const SCHEMA = [
     c INTEGER NOT NULL,
     PRIMARY KEY (k, w)
   )`,
+  `CREATE TABLE IF NOT EXISTS settings (
+    k TEXT PRIMARY KEY,
+    v TEXT NOT NULL
+  )`,
   'CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)',
   'CREATE INDEX IF NOT EXISTS idx_orders_pay ON orders(payment_status)',
   'CREATE INDEX IF NOT EXISTS idx_attempts_order ON midtrans_attempts(order_id)'
@@ -143,6 +147,9 @@ db.init = function init() {
   if (!readyPromise) {
     readyPromise = (async () => {
       await client.batch(SCHEMA.map(sql => ({ sql, args: [] })), 'write');
+      // Migrasi ringan: kolom penanda "wajib ganti password" (aman bila sudah ada)
+      try { await client.execute({ sql: 'ALTER TABLE users ADD COLUMN must_change_pw INTEGER DEFAULT 0', args: [] }); }
+      catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
       const c = await db.get('SELECT COUNT(*) AS c FROM products');
       if (!c || c.c === 0) {
         await client.batch(SEED_PRODUCTS.map(args => ({

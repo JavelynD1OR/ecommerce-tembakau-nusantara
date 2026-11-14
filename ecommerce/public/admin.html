@@ -264,6 +264,14 @@
           <span>📑</span>
           <span>Pesanan Masuk</span>
         </button>
+        <button type="button" class="sidebar-nav-btn" id="menu-btn-users">
+          <span>👥</span>
+          <span>Data Pelanggan</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" id="menu-btn-security">
+          <span>🔐</span>
+          <span>Keamanan Akun Admin</span>
+        </button>
         <button type="button" class="sidebar-nav-btn" id="menu-btn-reports">
           <span>🖨️</span>
           <span>Laporan Penjualan (PDF)</span>
@@ -473,6 +481,40 @@
         <!-- ========================================================
              SECTION 4: LAPORAN PENJUALAN
              ======================================================== -->
+        <section id="section-users" class="admin-section">
+          <div class="checkout-card" style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.1rem; color: var(--primary); font-weight: 700;">Data Pelanggan Terdaftar</h3>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin: 4px 0 12px;">
+              Password pelanggan disimpan dalam bentuk terenkripsi (hash) sehingga <strong>tidak bisa dilihat</strong>, termasuk oleh admin.
+              Jika pelanggan lupa password, klik <strong>Reset Password</strong> lalu kirim password sementara lewat WhatsApp.
+            </p>
+            <input type="search" id="users-search" class="form-control" placeholder="Cari nama / email / no. HP..." style="max-width: 360px; margin-bottom: 12px;">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead><tr><th>Nama</th><th>Email</th><th>No. HP</th><th>Terdaftar</th><th>Aksi</th></tr></thead>
+                <tbody id="admin-users-table-body"><tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Memuat...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-security" class="admin-section">
+          <div class="checkout-card" style="max-width: 520px;">
+            <h3 style="font-size: 1.1rem; color: var(--primary); font-weight: 700;">Ganti Password Admin</h3>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin: 4px 0 14px;">Minimal 10 karakter, kombinasi huruf dan angka.</p>
+            <form id="form-admin-password" autocomplete="off">
+              <div class="form-group"><label class="form-label" for="adm-old">Password Admin Saat Ini</label>
+                <input type="password" id="adm-old" class="form-control" required autocomplete="current-password"></div>
+              <div class="form-group"><label class="form-label" for="adm-new">Password Admin Baru</label>
+                <input type="password" id="adm-new" class="form-control" required minlength="10" autocomplete="new-password"></div>
+              <div class="form-group"><label class="form-label" for="adm-new2">Ulangi Password Baru</label>
+                <input type="password" id="adm-new2" class="form-control" required minlength="10" autocomplete="new-password"></div>
+              <div id="adm-pw-msg" style="display:none; margin-bottom:10px; font-size:0.84rem; font-weight:600;"></div>
+              <button type="submit" class="btn-action btn-action-primary" id="adm-pw-btn">Simpan Password Admin</button>
+            </form>
+          </div>
+        </section>
+
         <section id="section-reports" class="admin-section">
           <div class="checkout-card" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">

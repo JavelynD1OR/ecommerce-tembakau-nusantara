@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard: document.getElementById('menu-btn-dashboard'),
     products: document.getElementById('menu-btn-products'),
     orders: document.getElementById('menu-btn-orders'),
+    users: document.getElementById('menu-btn-users'),
+    security: document.getElementById('menu-btn-security'),
     reports: document.getElementById('menu-btn-reports')
   };
 
@@ -105,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard: document.getElementById('section-dashboard'),
     products: document.getElementById('section-products'),
     orders: document.getElementById('section-orders'),
+    users: document.getElementById('section-users'),
+    security: document.getElementById('section-security'),
     reports: document.getElementById('section-reports')
   };
 
@@ -120,6 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
     orders: {
       title: 'Manajemen Pesanan Masuk & Nomor Resi',
       sub: 'Periksa detail pengiriman pesanan pelanggan dan masukkan resi ekspedisi kurir.'
+    },
+    users: {
+      title: 'Data Pelanggan',
+      sub: 'Lihat akun pelanggan dan reset password bagi pelanggan yang lupa.'
+    },
+    security: {
+      title: 'Keamanan Akun Admin',
+      sub: 'Ganti password login admin.'
     },
     reports: {
       title: 'Laporan Rekapitulasi Penjualan (Tugas Akhir/Skripsi)',
@@ -151,6 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchOrders();
     } else if (name === 'reports') {
       loadReportsView();
+    } else if (name === 'users') {
+      loadUsers();
     }
   }
 
@@ -158,6 +172,95 @@ document.addEventListener('DOMContentLoaded', () => {
   menuBtns.products.addEventListener('click', () => switchSection('products'));
   menuBtns.orders.addEventListener('click', () => switchSection('orders'));
   menuBtns.reports.addEventListener('click', () => switchSection('reports'));
+  menuBtns.users.addEventListener('click', () => switchSection('users'));
+  menuBtns.security.addEventListener('click', () => switchSection('security'));
+
+  // ========================================================
+  // DATA PELANGGAN + RESET PASSWORD
+  // ========================================================
+  const escH = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let usersCache = [];
+  async function loadUsers() {
+    const body = document.getElementById('admin-users-table-body');
+    try {
+      const q = (document.getElementById('users-search').value || '').trim();
+      const res = await adminFetch('/api/admin/users?q=' + encodeURIComponent(q));
+      const json = await res.json();
+      usersCache = json.data || [];
+      if (!usersCache.length) { body.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Belum ada pelanggan.</td></tr>'; return; }
+      body.innerHTML = usersCache.map(u => `
+        <tr>
+          <td><strong>${escH(u.nama)}</strong>${u.is_google ? ' <span style="font-size:0.7rem;color:var(--text-muted);">(Google)</span>' : ''}${u.must_change_pw ? '<div style="font-size:0.7rem;color:#92400E;font-weight:600;">⏳ belum ganti password sementara</div>' : ''}</td>
+          <td>${escH(u.email)}</td>
+          <td>${escH(u.no_hp || '-')}</td>
+          <td>${formatTanggalIndo(u.created_at)}</td>
+          <td><button class="btn-action" style="font-size:0.75rem;" onclick="window.resetUserPassword(${Number(u.id)})">🔑 Reset Password</button></td>
+        </tr>`).join('');
+    } catch (e) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#B91C1C;">Gagal memuat data pelanggan.</td></tr>';
+    }
+  }
+  let usersSearchTimer = null;
+  document.getElementById('users-search')?.addEventListener('input', () => { clearTimeout(usersSearchTimer); usersSearchTimer = setTimeout(loadUsers, 300); });
+
+  window.resetUserPassword = async (id) => {
+    const u = usersCache.find(x => x.id === id);
+    if (!u) return;
+    if (!confirm(`Reset password untuk ${u.nama} (${u.email})?\nPassword lama tidak berlaku lagi dan dibuat password sementara.`)) return;
+    try {
+      const res = await adminFetch(`/api/admin/users/${id}/reset-password`, { method: 'POST' });
+      const json = await res.json();
+      if (!json.success) { alert(json.message || 'Gagal reset password.'); return; }
+      showTempPassword(json.data);
+      loadUsers();
+    } catch (e) { alert('Tidak dapat terhubung ke server.'); }
+  };
+
+  function showTempPassword(d) {
+    let hp = String(d.no_hp || '').replace(/[^0-9]/g, '');
+    if (hp.startsWith('0')) hp = '62' + hp.slice(1);
+    const text = `Halo ${d.nama}, password akun Nusantara Tobacco Anda telah direset.\n\nEmail: ${d.email}\nPassword sementara: ${d.temp_password}\n\nSilakan login lalu buat password baru. Jangan bagikan password ini ke siapa pun.`;
+    const wa = hp ? `https://wa.me/${hp}?text=${encodeURIComponent(text)}` : '';
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = `
+      <div style="background:#fff;border-radius:12px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.3);">
+        <h3 style="margin:0 0 6px;color:var(--primary);">Password Sementara Dibuat</h3>
+        <p style="font-size:.84rem;color:var(--text-muted);margin:0 0 12px;">Untuk <strong>${escH(d.nama)}</strong> (${escH(d.email)}). Password ini <strong>hanya tampil sekali</strong>; pelanggan wajib menggantinya saat login.</p>
+        <div style="background:#F5F1EA;border:1px dashed #A8967F;border-radius:8px;padding:12px;text-align:center;font-family:ui-monospace,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:1px;user-select:all;">${escH(d.temp_password)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+          <button type="button" id="tp-copy" class="btn-action btn-action-secondary" style="flex:1;">Salin</button>
+          ${wa ? `<a href="${wa}" target="_blank" rel="noopener noreferrer" class="btn-action" style="flex:2;background:#25D366;color:#fff;text-align:center;text-decoration:none;font-weight:700;">Kirim via WhatsApp</a>` : '<span style="font-size:.78rem;color:var(--text-muted);flex:2;">Nomor HP pelanggan kosong, sampaikan manual.</span>'}
+        </div>
+        <button type="button" id="tp-close" class="btn-action btn-action-primary" style="width:100%;margin-top:10px;">Selesai</button>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#tp-copy').onclick = () => { navigator.clipboard?.writeText(d.temp_password).then(() => { ov.querySelector('#tp-copy').textContent = 'Tersalin ✓'; }).catch(() => {}); };
+    ov.querySelector('#tp-close').onclick = () => ov.remove();
+  }
+
+  // ========================================================
+  // GANTI PASSWORD ADMIN
+  // ========================================================
+  document.getElementById('form-admin-password')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('adm-pw-msg');
+    const say = (t, ok) => { msg.textContent = t; msg.style.color = ok ? '#065F46' : '#B91C1C'; msg.style.display = 'block'; };
+    const nw = document.getElementById('adm-new').value;
+    if (nw !== document.getElementById('adm-new2').value) return say('Konfirmasi password baru tidak sama.', false);
+    const btn = document.getElementById('adm-pw-btn');
+    btn.disabled = true;
+    try {
+      const res = await adminFetch('/api/admin/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_password: document.getElementById('adm-old').value, new_password: nw })
+      });
+      const json = await res.json();
+      say(json.message || (json.success ? 'Berhasil.' : 'Gagal.'), !!json.success);
+      if (json.success) e.target.reset();
+    } catch (err) { say('Tidak dapat terhubung ke server.', false); }
+    finally { btn.disabled = false; }
+  });
 
   window.navToOrders = () => switchSection('orders');
 

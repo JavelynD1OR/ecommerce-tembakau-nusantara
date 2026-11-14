@@ -188,7 +188,7 @@ function signUserToken(user) {
   return jwt.sign({ sub: user.id, role: 'user' }, getJwtSecret(), { expiresIn: '7d' });
 }
 function publicUser(u) {
-  return { id: u.id, nama: u.nama, email: u.email, no_hp: u.no_hp, alamat: u.alamat, avatar: u.avatar };
+  return { id: u.id, nama: u.nama, email: u.email, no_hp: u.no_hp, alamat: u.alamat, avatar: u.avatar, must_change_pw: !!u.must_change_pw, has_password: !!u.password };
 }
 function readToken(req) {
   const h = req.headers.authorization || '';
@@ -591,6 +591,72 @@ app.post('/api/auth/register', authLimiter, ah(async (req, res) => {
     [nama, email, bcrypt.hashSync(password, 10), hpReg, cleanText(req.body.alamat, 400), '', new Date().toISOString()]);
   const user = await db.get('SELECT * FROM users WHERE id = ?', [r.lastInsertRowid]);
   res.json({ success: true, token: signUserToken(user), user: publicUser(user) });
+}));
+
+/** Hash password admin yang berlaku: hasil ganti dari panel admin (tabel settings) > env ADMIN_PASSWORD. */
+async function getEffectiveAdminHash() {
+  const row = await db.get("SELECT v FROM settings WHERE k = 'admin_hash'");
+  return row && row.v ? row.v : getAdminHash();
+}
+
+function validNewPassword(pw) {
+  if (pw.length < 8) return 'Password baru minimal 8 karakter.';
+  if (pw.length > 72) return 'Password baru maksimal 72 karakter.';
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return 'Password baru harus mengandung huruf dan angka.';
+  return '';
+}
+
+// Pelanggan: ganti password sendiri (password lama wajib, kecuali akun Google yang belum punya password
+// atau password sementara hasil reset admin).
+app.post('/api/user/change-password', authLimiter, requireUser, ah(async (req, res) => {
+  const oldPw = String(req.body.old_password || '');
+  const newPw = String(req.body.new_password || '');
+  const err = validNewPassword(newPw);
+  if (err) return res.status(400).json({ success: false, message: err });
+  const u = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+  if (!u) return res.status(404).json({ success: false, message: 'Akun tidak ditemukan.' });
+  if (u.password) {
+    if (!oldPw || !bcrypt.compareSync(oldPw, u.password)) return res.status(400).json({ success: false, message: 'Password lama salah.' });
+    if (oldPw === newPw) return res.status(400).json({ success: false, message: 'Password baru harus berbeda dari password lama.' });
+  }
+  await db.run('UPDATE users SET password = ?, must_change_pw = 0 WHERE id = ?', [bcrypt.hashSync(newPw, 10), u.id]);
+  const fresh = await db.get('SELECT * FROM users WHERE id = ?', [u.id]);
+  res.json({ success: true, message: 'Password berhasil diganti.', user: publicUser(fresh) });
+}));
+
+// Admin: daftar pelanggan (tanpa password; password memang tidak bisa dilihat)
+app.get('/api/admin/users', requireAdmin, ah(async (req, res) => {
+  const q = String(req.query.q || '').trim().toLowerCase().slice(0, 60);
+  const rows = await db.all(
+    `SELECT id, nama, email, no_hp, created_at, must_change_pw, (password != '') AS has_password, (google_id != '') AS is_google
+     FROM users ORDER BY id DESC LIMIT 500`);
+  const out = q ? rows.filter(r => `${r.nama} ${r.email} ${r.no_hp}`.toLowerCase().includes(q)) : rows;
+  res.json({ success: true, data: out });
+}));
+
+// Admin: reset password pelanggan -> password sementara (ditampilkan sekali, wajib diganti saat login)
+app.post('/api/admin/users/:id/reset-password', requireAdmin, ah(async (req, res) => {
+  const u = await db.get('SELECT id, nama, email, no_hp FROM users WHERE id = ?', [Number(req.params.id)]);
+  if (!u) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan.' });
+  const alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let temp = '';
+  for (let i = 0; i < 8; i++) temp += alphabet[crypto.randomInt(alphabet.length)];
+  temp += crypto.randomInt(10, 100); // pasti ada angka
+  await db.run('UPDATE users SET password = ?, must_change_pw = 1 WHERE id = ?', [bcrypt.hashSync(temp, 10), u.id]);
+  res.json({ success: true, message: 'Password sementara dibuat.', data: { id: u.id, nama: u.nama, email: u.email, no_hp: u.no_hp, temp_password: temp } });
+}));
+
+// Admin: ganti password admin dari panel (disimpan sebagai hash di tabel settings)
+app.post('/api/admin/change-password', authLimiter, requireAdmin, ah(async (req, res) => {
+  const oldPw = String(req.body.old_password || '');
+  const newPw = String(req.body.new_password || '');
+  if (!bcrypt.compareSync(oldPw, await getEffectiveAdminHash())) return res.status(400).json({ success: false, message: 'Password admin saat ini salah.' });
+  if (newPw.length < 10) return res.status(400).json({ success: false, message: 'Password admin baru minimal 10 karakter.' });
+  const err = validNewPassword(newPw);
+  if (err) return res.status(400).json({ success: false, message: err.replace('Password baru', 'Password admin baru') });
+  if (newPw === oldPw) return res.status(400).json({ success: false, message: 'Password baru harus berbeda dari yang lama.' });
+  await db.run("INSERT INTO settings (k, v) VALUES ('admin_hash', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v", [bcrypt.hashSync(newPw, 10)]);
+  res.json({ success: true, message: 'Password admin berhasil diganti. Gunakan password baru saat login berikutnya.' });
 }));
 
 app.put('/api/user/profile/:id', requireUser, ah(async (req, res) => {
@@ -1050,7 +1116,7 @@ app.get('/api/orders/:invoice', ah(async (req, res, next) => {
 app.post('/api/admin/login', authLimiter, ah(async (req, res) => {
   const u = String(req.body.username || ''), p = String(req.body.password || '');
   const userOk = u.length === ADMIN_USERNAME.length && crypto.timingSafeEqual(Buffer.from(u), Buffer.from(ADMIN_USERNAME));
-  const passOk = bcrypt.compareSync(p, getAdminHash());
+  const passOk = bcrypt.compareSync(p, await getEffectiveAdminHash());
   if (userOk && passOk) {
     return res.json({ success: true, token: jwt.sign({ role: 'admin' }, getJwtSecret(), { expiresIn: '12h' }) });
   }

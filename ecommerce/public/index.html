@@ -89,6 +89,9 @@
               <button class="dropdown-item" id="btn-menu-orders">
                 📦 <span>Riwayat Pesanan Saya</span>
               </button>
+              <button class="dropdown-item" id="btn-menu-password">
+                🔑 <span>Ganti Password</span>
+              </button>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" id="btn-menu-logout" style="color: #DC2626;">
                 🚪 <span>Keluar Akun</span>
@@ -564,6 +567,41 @@
   <!-- ========================================================
        MODAL 2: KELOLA ALAMAT PENGIRIMAN PRIBADI SAYA
        ======================================================== -->
+  <dialog id="modal-change-password" class="custom-modal">
+    <div class="modal-header">
+      <h3>🔑 Ganti Password</h3>
+      <button type="button" class="btn-close-modal" id="btn-pw-close">✕</button>
+    </div>
+    <form id="form-change-password" autocomplete="off">
+      <div class="modal-body">
+        <p id="pw-intro" style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">
+          Gunakan password yang kuat dan tidak dipakai di situs lain.
+        </p>
+        <div class="form-group" id="pw-old-group">
+          <label class="form-label" for="pw-old" id="pw-old-label">Password Lama <span class="req">*</span></label>
+          <input type="password" id="pw-old" class="form-control" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pw-new">Password Baru <span class="req">*</span></label>
+          <input type="password" id="pw-new" class="form-control" minlength="8" maxlength="72" required autocomplete="new-password">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Minimal 8 karakter, kombinasi huruf dan angka.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pw-new2">Ulangi Password Baru <span class="req">*</span></label>
+          <input type="password" id="pw-new2" class="form-control" minlength="8" maxlength="72" required autocomplete="new-password">
+        </div>
+        <label style="display:flex; gap:8px; align-items:center; font-size:0.82rem; cursor:pointer;">
+          <input type="checkbox" id="pw-show"> Tampilkan password
+        </label>
+        <div id="pw-error" style="display:none; margin-top:10px; color:#B91C1C; font-size:0.83rem; font-weight:600;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-action-secondary" id="btn-pw-cancel">Batal</button>
+        <button type="submit" class="btn-action btn-action-primary" id="btn-pw-submit">Simpan Password</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="modal-user-address" class="custom-modal">
     <div class="modal-header">
       <h3>📍 Alamat Pengiriman Saya</h3>

@@ -323,6 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update Box Verifikasi di Form Checkout
       updateCheckoutAuthBox(true);
+      // Password sementara dari admin -> wajib diganti
+      if (state.currentUser.must_change_pw) setTimeout(() => openPasswordModal(true), 300);
     } else {
       btnOpenLogin.style.display = 'inline-flex';
       userMenuBox.style.display = 'none';
@@ -412,6 +414,65 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-menu-orders')?.addEventListener('click', () => {
     userDropdownMenu.classList.remove('show');
     switchView('orders');
+  });
+
+  // ---------- Ganti password pelanggan ----------
+  const pwModal = document.getElementById('modal-change-password');
+  let pwForced = false;
+  function openPasswordModal(forced) {
+    if (!pwModal || pwModal.open) return;
+    pwForced = !!forced;
+    const hasPw = state.currentUser && state.currentUser.has_password !== false;
+    document.getElementById('form-change-password').reset();
+    document.getElementById('pw-error').style.display = 'none';
+    document.getElementById('pw-old-group').style.display = hasPw ? '' : 'none';
+    document.getElementById('pw-old').required = !!hasPw;
+    document.getElementById('pw-old-label').innerHTML = (forced ? 'Password Sementara (dari admin)' : 'Password Lama') + ' <span class="req">*</span>';
+    document.getElementById('pw-intro').textContent = forced
+      ? 'Password Anda baru direset oleh admin. Demi keamanan, buat password baru sekarang.'
+      : (hasPw ? 'Gunakan password yang kuat dan tidak dipakai di situs lain.' : 'Akun Google Anda belum punya password. Buat password agar bisa masuk juga dengan email.');
+    document.getElementById('btn-pw-cancel').style.display = forced ? 'none' : '';
+    document.getElementById('btn-pw-close').style.display = forced ? 'none' : '';
+    pwModal.showModal();
+  }
+  function closePasswordModal() { pwForced = false; pwModal.close(); }
+  pwModal?.addEventListener('cancel', (e) => { if (pwForced) e.preventDefault(); });
+  document.getElementById('btn-pw-close')?.addEventListener('click', closePasswordModal);
+  document.getElementById('btn-pw-cancel')?.addEventListener('click', closePasswordModal);
+  document.getElementById('pw-show')?.addEventListener('change', (e) => {
+    ['pw-old', 'pw-new', 'pw-new2'].forEach(id => { document.getElementById(id).type = e.target.checked ? 'text' : 'password'; });
+  });
+  document.getElementById('btn-menu-password')?.addEventListener('click', () => {
+    userDropdownMenu.classList.remove('show');
+    openPasswordModal(false);
+  });
+  document.getElementById('form-change-password')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errBox = document.getElementById('pw-error');
+    const showErr = (m) => { errBox.textContent = m; errBox.style.display = 'block'; };
+    errBox.style.display = 'none';
+    const oldPw = document.getElementById('pw-old').value;
+    const newPw = document.getElementById('pw-new').value;
+    if (newPw !== document.getElementById('pw-new2').value) return showErr('Konfirmasi password baru tidak sama.');
+    if (newPw.length < 8 || !/[A-Za-z]/.test(newPw) || !/[0-9]/.test(newPw)) return showErr('Password baru minimal 8 karakter dan harus berisi huruf dan angka.');
+    const btn = document.getElementById('btn-pw-submit');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    try {
+      const res = await authFetch('/api/user/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_password: oldPw, new_password: newPw })
+      });
+      const json = await res.json();
+      if (!json.success) return showErr(json.message || 'Gagal mengganti password.');
+      state.currentUser = { ...state.currentUser, ...json.user };
+      localStorage.setItem('nusantara_user', JSON.stringify(state.currentUser));
+      closePasswordModal();
+      showToast('Password berhasil diganti.');
+    } catch (err) {
+      showErr('Tidak dapat terhubung ke server. Coba lagi.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Simpan Password';
+    }
   });
 
   document.getElementById('btn-menu-logout')?.addEventListener('click', () => {
