@@ -304,17 +304,6 @@
                   </label>
 
                   <label class="radio-card">
-                    <input type="radio" name="courier" value="J&T Express" data-perkg="5500">
-                    <div class="radio-info">
-                      <div class="radio-title">
-                        <span>J&T Express (Estimasi 2 - 3 Hari)</span>
-                        <strong style="color: var(--primary);" class="courier-price">Rp 5.500 / kg</strong>
-                      </div>
-                      <div class="radio-desc">Tarif Rp 5.500 per kilo. Ongkir otomatis menyesuaikan total berat belanjaan.</div>
-                    </div>
-                  </label>
-
-                  <label class="radio-card">
                     <input type="radio" name="courier" value="Ambil di Toko" data-perkg="0">
                     <div class="radio-info">
                       <div class="radio-title">
@@ -328,12 +317,12 @@
                 </div>
               </div>
 
-              <!-- METODE PEMBAYARAN: dipilih langsung di sini, lalu dibayar via Midtrans -->
+              <!-- METODE PEMBAYARAN MANUAL: transfer / QRIS / e-wallet, bukti dikirim via WhatsApp -->
               <div class="form-group">
                 <label class="form-label">Metode Pembayaran <span class="req">*</span></label>
                 <div class="pay-option-grid" id="payment-selector">
                   <label class="radio-card pay-option selected">
-                    <input type="radio" name="payment" value="qris" data-label="QRIS" checked>
+                    <input type="radio" name="payment" value="m_qris" data-label="QRIS" checked>
                     <span class="pay-badge">QR</span>
                     <div class="radio-info">
                       <div class="radio-title"><span>QRIS</span></div>
@@ -341,75 +330,35 @@
                     </div>
                   </label>
                   <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="gopay" data-label="GoPay">
-                    <span class="pay-badge">GP</span>
-                    <div class="radio-info">
-                      <div class="radio-title"><span>GoPay</span></div>
-                      <div class="radio-desc">Bayar lewat aplikasi Gojek / GoPay</div>
-                    </div>
-                  </label>
-                  <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="shopeepay" data-label="ShopeePay">
-                    <span class="pay-badge">SP</span>
-                    <div class="radio-info">
-                      <div class="radio-title"><span>ShopeePay</span></div>
-                      <div class="radio-desc">Bayar lewat aplikasi Shopee</div>
-                    </div>
-                  </label>
-                  <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="dana" data-label="DANA">
-                    <span class="pay-badge">DA</span>
-                    <div class="radio-info">
-                      <div class="radio-title"><span>DANA</span></div>
-                      <div class="radio-desc">Bayar lewat aplikasi DANA</div>
-                    </div>
-                  </label>
-                  <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="va_bca" data-label="Transfer BCA">
+                    <input type="radio" name="payment" value="m_bca" data-label="Transfer BCA">
                     <span class="pay-badge">BCA</span>
                     <div class="radio-info">
                       <div class="radio-title"><span>Transfer BCA</span></div>
-                      <div class="radio-desc">Virtual Account BCA</div>
+                      <div class="radio-desc">Transfer ke rekening BCA</div>
                     </div>
                   </label>
                   <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="va_bni" data-label="Transfer BNI">
+                    <input type="radio" name="payment" value="m_bni" data-label="Transfer BNI">
                     <span class="pay-badge">BNI</span>
                     <div class="radio-info">
                       <div class="radio-title"><span>Transfer BNI</span></div>
-                      <div class="radio-desc">Virtual Account BNI</div>
+                      <div class="radio-desc">Transfer ke rekening BNI</div>
                     </div>
                   </label>
                   <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="va_bri" data-label="Transfer BRI">
-                    <span class="pay-badge">BRI</span>
+                    <input type="radio" name="payment" value="m_dana" data-label="DANA">
+                    <span class="pay-badge">DANA</span>
                     <div class="radio-info">
-                      <div class="radio-title"><span>Transfer BRI</span></div>
-                      <div class="radio-desc">Virtual Account BRI</div>
+                      <div class="radio-title"><span>DANA</span></div>
+                      <div class="radio-desc">Kirim saldo ke nomor DANA</div>
                     </div>
                   </label>
                   <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="va_mandiri" data-label="Transfer Mandiri">
-                    <span class="pay-badge">MDR</span>
+                    <input type="radio" name="payment" value="m_jago" data-label="Transfer Bank Jago">
+                    <span class="pay-badge">JAGO</span>
                     <div class="radio-info">
-                      <div class="radio-title"><span>Transfer Mandiri</span></div>
-                      <div class="radio-desc">Mandiri Bill Payment</div>
-                    </div>
-                  </label>
-                  <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="va_permata" data-label="Transfer Permata">
-                    <span class="pay-badge">PMT</span>
-                    <div class="radio-info">
-                      <div class="radio-title"><span>Transfer Permata</span></div>
-                      <div class="radio-desc">Virtual Account Permata</div>
-                    </div>
-                  </label>
-                  <label class="radio-card pay-option">
-                    <input type="radio" name="payment" value="semua" data-label="Metode lain">
-                    <span class="pay-badge">···</span>
-                    <div class="radio-info">
-                      <div class="radio-title"><span>Metode lain</span></div>
-                      <div class="radio-desc">Pilih sendiri di popup pembayaran</div>
+                      <div class="radio-title"><span>Transfer Bank Jago</span></div>
+                      <div class="radio-desc">Transfer ke rekening Bank Jago</div>
                     </div>
                   </label>
                   <label class="radio-card pay-option" id="pay-opt-cod-toko" style="display:none;">
@@ -421,8 +370,12 @@
                     </div>
                   </label>
                 </div>
-                <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 8px;">
-                  🔒 Dibayar aman lewat Midtrans. Nominal terisi otomatis dan status pesanan berubah otomatis setelah dana diterima, tanpa perlu kirim bukti transfer.
+
+                <!-- Rincian rekening + total yang harus dibayar (diisi otomatis sesuai metode yang dipilih) -->
+                <div id="pay-instruction-panel" class="pay-instruction-panel"></div>
+
+                <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 8px; line-height: 1.5;">
+                  🔒 Pembayaran manual: bayar sesuai total di atas, lalu kirim bukti pembayaran ke WhatsApp admin lewat tombol yang muncul setelah pesanan dibuat. Pesanan diproses setelah pembayaran dikonfirmasi admin.
                 </small>
               </div>
             </form>
@@ -703,7 +656,7 @@
         ✕ Tutup & Ubah
       </button>
       <button type="button" id="btn-proceed-pay" class="btn-action btn-action-primary" style="flex: 2; justify-content: center; padding: 10px; font-weight: 700; font-size: 0.95rem;">
-        💳 Bayar Sekarang
+        ✅ Buat Pesanan & Lihat Cara Bayar
       </button>
     </div>
   </dialog>
@@ -742,13 +695,13 @@
     <div class="modal-body">
       <p style="font-size:0.86rem; color: var(--text-muted); margin-bottom:12px;">
         Pesanan <strong id="chg-pay-invoice">-</strong> &middot; Total <strong id="chg-pay-total">-</strong>.
-        Tagihan sebelumnya otomatis dibatalkan dan diganti tagihan baru dengan metode yang Anda pilih. Batas waktu bayar tidak berubah.
+        Pilih metode lain. Nominal yang harus dibayar tetap sama dan batas waktu bayar tidak berubah.
       </p>
       <div class="pay-option-grid" id="chg-pay-options"></div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn-action btn-action-secondary" onclick="document.getElementById('modal-change-payment').close()">Batal</button>
-      <button type="button" id="btn-chg-pay-submit" class="btn-action btn-action-primary">Ganti &amp; Lanjut Bayar</button>
+      <button type="button" id="btn-chg-pay-submit" class="btn-action btn-action-primary">Ganti &amp; Lihat Cara Bayar</button>
     </div>
   </dialog>
 

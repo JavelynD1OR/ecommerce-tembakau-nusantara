@@ -685,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="btn-action btn-action-primary" onclick="window.openStatusModal(${order.id})" style="font-size: 0.75rem; margin-bottom: 4px;">
               ⚙️ Ubah Status
             </button>
-            ${order.payment_status === 'cod' && !['Dibatalkan', 'Kedaluwarsa'].includes(order.status) ? `<button class="btn-action" onclick="window.markCodPaid(${order.id})" style="font-size: 0.75rem; margin-bottom: 4px; background:#ECFDF5; color:#065F46; border:1px solid #6EE7B7;">💵 Tandai Lunas</button>` : ''}
+            ${(['cod', 'pending'].includes(order.payment_status) && !['Dibatalkan', 'Kedaluwarsa'].includes(order.status)) || order.payment_status === 'expired' ? `<button class="btn-action" onclick="window.markCodPaid(${order.id})" style="font-size: 0.75rem; margin-bottom: 4px; background:#ECFDF5; color:#065F46; border:1px solid #6EE7B7;">${order.payment_status === 'cod' ? '💵 Tandai Lunas' : '✅ Konfirmasi Lunas'}</button>` : ''}
             <button class="btn-action btn-action-secondary" onclick="window.viewInvoiceDetail('${order.no_invoice}')" style="font-size: 0.75rem;">
               Detail
             </button>
@@ -698,7 +698,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.markCodPaid = async function (id) {
     const o = state.orders.find(item => item.id === id);
     if (!o) return;
-    if (!confirm(`Tandai pesanan ${o.no_invoice} sebagai LUNAS?\nPastikan uang tunai ${formatRupiah(o.total_bayar)} sudah benar-benar diterima.`)) return;
+    const isCod = o.payment_status === 'cod';
+    const late = o.payment_status === 'expired' ? '\n\nCatatan: pesanan ini sudah KEDALUWARSA. Jika dikonfirmasi, stok diambil lagi dan pesanan masuk Diproses.' : '';
+    const ask = isCod
+      ? `Tandai pesanan ${o.no_invoice} sebagai LUNAS?\nPastikan uang tunai ${formatRupiah(o.total_bayar)} sudah benar-benar diterima.`
+      : `Konfirmasi pembayaran pesanan ${o.no_invoice}?\nPastikan bukti pembayaran dari pelanggan sudah dicek dan dana ${formatRupiah(o.total_bayar)} benar-benar masuk (${o.metode_bayar}).${late}`;
+    if (!confirm(ask)) return;
     try {
       const res = await adminFetch(`/api/orders/${id}/mark-paid`, { method: 'POST' });
       const json = await res.json();

@@ -541,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
         banner.style.display = 'none';
       }
     }
+    try { updateCheckoutSummary(); } catch (e) { /* keranjang belum siap */ }
   }
 
   // Tab Auth Manual
@@ -983,6 +984,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.pay-nominal-display').forEach(span => {
       span.textContent = formatRupiah(grandTotal);
     });
+
+    renderCheckoutPayPanel(grandTotal);
   }
 
   // COD: "Bayar di Toko" hanya muncul bila kurir = Ambil di Toko.
@@ -993,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toko) toko.style.display = pickup ? '' : 'none';
     const checked = document.querySelector('input[name="payment"]:checked');
     if (checked && /^cod_/.test(checked.value) && checked.closest('.radio-card').style.display === 'none') {
-      const qris = document.querySelector('input[name="payment"][value="qris"]');
+      const qris = document.querySelector('input[name="payment"][value="m_qris"]');
       if (qris) { qris.checked = true; qris.dispatchEvent(new Event('change')); }
     }
   }
@@ -1032,12 +1035,153 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Ganti metode -> rincian rekening & nominal ikut berganti
+  document.querySelectorAll('#payment-selector input[name="payment"]').forEach(r => r.addEventListener('change', () => updateCheckoutSummary()));
+
   // ========================================================
   // ALUR PEMBAYARAN 3 TAHAP:
   // TAHAP A: DETAIL PESANAN (KONFIRMASI SEBELUM BAYAR)
   // TAHAP B: PEMBAYARAN DETAIL & REDIRECT APK (DEEPLINK & SALIN)
   // TAHAP C: OTOMATIS TERBACA LUNAS (DIPROSES) & WA OWNER
   // ========================================================
+
+  // ========================================================
+  // PEMBAYARAN MANUAL: rincian rekening/QRIS, total pas, kirim bukti via WhatsApp
+  // ========================================================
+  function isManualMode() { return !!(state.config && state.config.paymentMode === 'manual' && state.config.manualPayments); }
+  function manualMethods() { return isManualMode() ? state.config.manualPayments.methods : []; }
+  function manualMethodByCode(code) { return manualMethods().find(m => m.code === code); }
+  function manualMethodByLabel(label) { return manualMethods().find(m => m.label === label); }
+  function proceedLabel(code) { return /^cod_/.test(code || '') ? '✅ Buat Pesanan (COD)' : '✅ Buat Pesanan & Lihat Cara Bayar'; }
+
+  function payCopyBtn(text, label) {
+    const safe = String(text).replace(/[^0-9A-Za-z]/g, '');
+    return `<button type="button" class="pay-copy-btn" onclick="window.copyToClipboard('${safe}', '${label}')">Salin</button>`;
+  }
+
+  function payAmountHtml(total, noteHtml) {
+    return `
+      <div class="pay-amount-box">
+        <div class="pay-amount-label">Total yang harus dibayar</div>
+        <div class="pay-amount-row"><strong class="pay-amount">${formatRupiah(total)}</strong>${payCopyBtn(Math.round(total), 'nominal')}</div>
+        <div class="pay-amount-note">${noteHtml}</div>
+      </div>`;
+  }
+
+  function payInstructionHtml(m, total) {
+    const amount = payAmountHtml(total, 'Bayar <strong>tepat sesuai nominal</strong> di atas agar pembayaran mudah dicocokkan.');
+    let detail;
+    if (m.type === 'qris') {
+      detail = `
+        <div class="pay-qris-wrap">
+          <img class="pay-qris-img" src="${esc(m.image)}" alt="Kode QRIS ${esc(m.merchant || '')}" loading="lazy">
+          <a class="pay-qris-dl" href="${esc(m.image)}" download="QRIS-Nusantara-Tobacco.jpg">⬇ Unduh QRIS</a>
+        </div>
+        <div class="pay-note">QRIS ini <strong>tidak otomatis terisi nominal</strong>. Setelah scan, masukkan nominal <strong>${formatRupiah(total)}</strong>${m.merchant ? ` dan pastikan nama merchant tertulis <strong>${esc(m.merchant)}</strong>` : ''}.</div>`;
+    } else {
+      const wallet = m.type === 'ewallet';
+      detail = `
+        <div class="pay-account">
+          <div class="pay-row"><span class="pay-k">${wallet ? 'Aplikasi' : 'Bank'}</span><span class="pay-v">${esc(m.bank)}</span></div>
+          <div class="pay-row"><span class="pay-k">${wallet ? 'Nomor DANA' : 'No. Rekening'}</span><span class="pay-v pay-mono">${esc(m.number)}</span>${payCopyBtn(m.number, wallet ? 'nomor DANA' : 'nomor rekening')}</div>
+          <div class="pay-row"><span class="pay-k">Atas Nama</span><span class="pay-v">${esc(m.holder)}</span></div>
+        </div>`;
+    }
+    return `
+      <div class="pay-card">
+        <div class="pay-card-head"><span class="pay-badge">${esc(m.badge)}</span>
+          <div><div class="pay-card-title">${esc(m.label)}</div><div class="pay-card-sub">${esc(m.desc)}</div></div>
+        </div>
+        ${amount}
+        ${detail}
+      </div>`;
+  }
+
+  function codInstructionHtml(total) {
+    return `
+      <div class="pay-card">
+        <div class="pay-card-head"><span class="pay-badge">COD</span>
+          <div><div class="pay-card-title">Bayar di Toko (COD)</div><div class="pay-card-sub">Bayar tunai saat mengambil pesanan</div></div>
+        </div>
+        ${payAmountHtml(total, 'Siapkan uang tunai sebesar nominal ini saat mengambil pesanan di toko.')}
+        <div class="pay-note">📍 Toko Nusantara Tobacco, Jl. Pramuka No.11, Jenang Utara, Jenang, Kec. Majenang, Kabupaten Cilacap, Jawa Tengah 53257.</div>
+      </div>`;
+  }
+
+  // Panel rincian di bawah pilihan metode (form checkout)
+  function renderCheckoutPayPanel(total) {
+    const panel = document.getElementById('pay-instruction-panel');
+    if (!panel) return;
+    if (!isManualMode() || !state.cart.length) { panel.innerHTML = ''; return; }
+    const checked = document.querySelector('input[name="payment"]:checked');
+    const code = checked ? checked.value : '';
+    let html = '';
+    if (code === 'cod_toko') html = codInstructionHtml(total);
+    else { const m = manualMethodByCode(code); if (m) html = payInstructionHtml(m, total); }
+    panel.innerHTML = html ? html + '<div class="pay-hint">Ini rincian pembayaran. Setelah menekan <strong>Konfirmasi &amp; Buat Pesanan</strong>, Anda akan mendapat halaman pembayaran beserta tombol kirim bukti ke WhatsApp admin.</div>' : '';
+  }
+
+  // Pesan WhatsApp untuk mengirim bukti pembayaran ke admin
+  function proofWaUrl(order) {
+    const mp = state.config.manualPayments;
+    let items = '';
+    try { items = JSON.parse(order.items_json).map(i => `• ${i.nama} x${i.qty}`).join('\n'); } catch (e) { /* abaikan */ }
+    const text =
+`Halo Admin Nusantara Tobacco,
+
+Saya telah membayar produk ini dengan nominal ${formatRupiah(order.total_bayar)} dan ini saya lampirkan bukti pembayarannya.
+
+Detail pesanan:
+No. Pesanan: ${order.no_invoice}
+Nama: ${order.nama_pelanggan}
+Produk:
+${items}
+Metode pembayaran: ${order.metode_bayar}
+Total dibayar: ${formatRupiah(order.total_bayar)}
+
+Mohon dikonfirmasi dan pesanan saya segera diproses. Terima kasih 🙏`;
+    return `https://wa.me/${mp.whatsapp}?text=${encodeURIComponent(text)}`;
+  }
+
+  function manualWarningHtml(order, windowText) {
+    let until = '';
+    if (order.expires_at) {
+      const d = new Date(order.expires_at);
+      if (!isNaN(d)) until = ' (sampai ' + d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', ':') + ' WIB)';
+    }
+    return `
+      <div id="pay-warning-box" class="warning-banner-3h">
+        <div style="font-size: 1.3rem; line-height: 1;">⏰</div>
+        <div>
+          <strong>Batas Waktu Pembayaran: ${windowText}${until}</strong><br>
+          Pesanan yang belum dibayar sampai batas waktu akan otomatis dibatalkan dan stok dikembalikan.
+        </div>
+      </div>`;
+  }
+
+  function manualStageHtml(order) {
+    const m = manualMethodByLabel(order.metode_bayar);
+    const body = m ? payInstructionHtml(m, order.total_bayar)
+      : `<div class="pay-note">Metode: <strong>${esc(order.metode_bayar)}</strong><br>Total: <strong>${formatRupiah(order.total_bayar)}</strong></div>`;
+    return `
+      <div id="payment-stage-actions" class="pay-target-box pay-manual">
+        ${body}
+        <ol class="pay-steps">
+          <li>Bayar <strong>${formatRupiah(order.total_bayar)}</strong> sesuai petunjuk di atas.</li>
+          <li>Screenshot / foto <strong>bukti pembayaran</strong>.</li>
+          <li>Tekan tombol hijau di bawah, <strong>lampirkan bukti</strong> di WhatsApp, lalu kirim.</li>
+          <li>Admin mengecek pembayaran, lalu status pesanan berubah menjadi <strong>Diproses</strong>.</li>
+        </ol>
+        <a id="btn-send-proof" class="btn-wa-proof" href="${proofWaUrl(order)}" target="_blank" rel="noopener noreferrer">📤 Kirim Bukti Pembayaran via WhatsApp</a>
+        <div class="pay-proof-hint">WhatsApp admin: <strong>${esc(state.config.manualPayments.whatsappDisplay)}</strong>. Pesan sudah terisi otomatis. Tambahkan foto bukti lewat ikon 📎 sebelum menekan kirim.</div>
+        <div id="pay-checking-note" class="pay-proof-hint" style="display:none;">⏳ Menunggu konfirmasi admin. Halaman ini berubah otomatis setelah pembayaran dikonfirmasi.</div>
+      </div>`;
+  }
+
+  function payOptions() {
+    return isManualMode() ? manualMethods().map(m => [m.code, m.label, m.desc, m.badge]) : PAY_OPTIONS;
+  }
+
   let pendingCheckoutData = null;
   let currentActiveOrder = null;
 
@@ -1104,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderOrderConfirmModal(pendingCheckoutData);
     const proceedBtn = document.getElementById('btn-proceed-pay');
-    if (proceedBtn) proceedBtn.textContent = /^cod_/.test(payment_code) ? '✅ Buat Pesanan (COD)' : '💳 Bayar Sekarang';
+    if (proceedBtn) proceedBtn.textContent = proceedLabel(payment_code);
     orderConfirmModal.showModal();
   });
 
@@ -1185,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btn = document.getElementById('btn-proceed-pay');
     btn.disabled = true;
-    btn.textContent = /^cod_/.test(pendingCheckoutData.payment_code || '') ? 'Membuat pesanan...' : 'Membuat tagihan pembayaran...';
+    btn.textContent = 'Membuat pesanan...';
 
     try {
       const orderPayload = {
@@ -1238,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Gagal membuat pesanan: ' + err.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = /^cod_/.test((pendingCheckoutData && pendingCheckoutData.payment_code) || '') ? '✅ Buat Pesanan (COD)' : '💳 Bayar Sekarang';
+      btn.textContent = proceedLabel(pendingCheckoutData && pendingCheckoutData.payment_code);
     }
   });
 
@@ -1269,6 +1413,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const windowMin = (state.config && state.config.paymentWindowMinutes) || 180;
     const windowText = windowMin % 60 === 0 ? `${windowMin / 60} jam` : `${windowMin} menit`;
+    const manualMode = isManualMode();
+    const warningHtml = manualMode ? manualWarningHtml(order, windowText) : `
+      <div id="pay-warning-box" class="warning-banner-3h">
+        <div style="font-size: 1.3rem; line-height: 1;">⚠️</div>
+        <div>
+          <strong>Batas Waktu Pembayaran: ${windowText}</strong><br>
+          Pesanan yang belum dibayar sampai batas waktu akan otomatis dibatalkan dan stok dikembalikan.
+        </div>
+      </div>
+    `;
+    const stageHtml = manualMode ? manualStageHtml(order) : `
+      <div id="payment-stage-actions" class="pay-target-box" style="text-align:center;">
+        <div style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 10px;">
+          Metode pembayaran: <strong>${esc(order.metode_bayar)}</strong> (via Midtrans).
+          Status akan berubah otomatis setelah pembayaran terkonfirmasi.
+        </div>
+        <button type="button" id="btn-open-snap" class="btn-verified-auto">💳 Bayar ${formatRupiah(order.total_bayar)} Sekarang</button>
+        <div id="pay-checking-note" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px; display:none;">
+          ⏳ Menunggu konfirmasi pembayaran dari Midtrans...
+        </div>
+      </div>
+    `;
 
     container.innerHTML = `
       <div class="order-detail-header-card">
@@ -1288,24 +1454,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <div id="pay-warning-box" class="warning-banner-3h">
-        <div style="font-size: 1.3rem; line-height: 1;">⚠️</div>
-        <div>
-          <strong>Batas Waktu Pembayaran: ${windowText}</strong><br>
-          Pesanan yang belum dibayar sampai batas waktu akan otomatis dibatalkan dan stok dikembalikan.
-        </div>
-      </div>
+${warningHtml}
 
-      <div id="payment-stage-actions" class="pay-target-box" style="text-align:center;">
-        <div style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 10px;">
-          Metode pembayaran: <strong>${esc(order.metode_bayar)}</strong> (via Midtrans).
-          Status akan berubah otomatis setelah pembayaran terkonfirmasi.
-        </div>
-        <button type="button" id="btn-open-snap" class="btn-verified-auto">💳 Bayar ${formatRupiah(order.total_bayar)} Sekarang</button>
-        <div id="pay-checking-note" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px; display:none;">
-          ⏳ Menunggu konfirmasi pembayaran dari Midtrans...
-        </div>
-      </div>
+      ${stageHtml}
 
       <div style="border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;">
         <div style="background-color: var(--surface-alt); padding: 8px 12px; font-weight: 700; font-size: 0.84rem; border-bottom: 1px solid var(--border-color);">📋 Rincian Pesanan</div>
@@ -1341,6 +1492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (order.payment_status === 'paid') showPaidState(order);
     else if (order.payment_status === 'cod') showCodState(order);
+    else if (manualMode && order.payment_status === 'pending') startPayPoll(order.no_invoice);
   }
 
   function showCodState(order) {
@@ -1387,8 +1539,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size: 1.2rem;">✓</span> Pembayaran Diterima!
           </div>
           <p style="font-size: 0.84rem; color: #047857; margin-bottom: 14px; line-height: 1.45;">
-            Pembayaran ${formatRupiah(order.total_bayar)} sudah dikonfirmasi oleh Midtrans${order.payment_type ? ' (' + esc(order.metode_bayar) + ')' : ''}.
-            Pesanan Anda berstatus <strong>Diproses</strong> dan akan segera dikemas. Tidak perlu mengirim bukti transfer.
+            Pembayaran ${formatRupiah(order.total_bayar)} sudah dikonfirmasi ${isManualMode() ? 'oleh admin toko' : 'oleh Midtrans'}${order.payment_type ? ' (' + esc(order.metode_bayar) + ')' : ''}.
+            Pesanan Anda berstatus <strong>Diproses</strong> dan akan segera dikemas.${isManualMode() ? '' : ' Tidak perlu mengirim bukti transfer.'}
           </p>
           <a href="${storeContactUrl(order)}" target="_blank" rel="noopener noreferrer" class="btn-wa-owner">💬 Hubungi Toko via WhatsApp (opsional)</a>
         </div>
@@ -1405,6 +1557,7 @@ document.addEventListener('DOMContentLoaded', () => {
       box.innerHTML = `
         <div style="color: #991B1B; font-weight: 700; margin-bottom: 4px;">Pesanan ${order.status === 'Kedaluwarsa' ? 'kedaluwarsa' : 'dibatalkan'}</div>
         <div style="font-size: 0.84rem; color: var(--text-muted);">Pembayaran tidak diterima. Stok sudah dikembalikan; silakan buat pesanan baru.</div>
+        ${isManualMode() ? `<div style="font-size: 0.82rem; margin-top: 10px;">Sudah terlanjur membayar? <a href="${storeContactUrl(order)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700;">Hubungi admin via WhatsApp</a>.</div>` : ''}
       `;
     }
   }
@@ -1452,6 +1605,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Buka popup pembayaran (Snap) atau halaman simulasi (mode uji lokal).
   async function launchPayment(order, payment) {
     if (!payment) return;
+    if (payment.mode === 'manual') return; // instruksi bayar sudah tampil di halaman pembayaran
     try {
       if (payment.mode === 'mock') {
         window.open(payment.redirect_url, '_blank');
@@ -1614,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     changePayInvoice = invoice;
     document.getElementById('chg-pay-invoice').textContent = invoice;
     document.getElementById('chg-pay-total').textContent = formatRupiah(order.total_bayar);
-    document.getElementById('chg-pay-options').innerHTML = PAY_OPTIONS.map(([v, t, d, b], i) => `
+    document.getElementById('chg-pay-options').innerHTML = payOptions().map(([v, t, d, b], i) => `
       <label class="radio-card pay-option${i === 0 ? ' selected' : ''}">
         <input type="radio" name="chg-payment" value="${v}"${i === 0 ? ' checked' : ''}>
         <span class="pay-badge">${b}</span>
@@ -1810,7 +1964,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${order.payment_status === 'cod' ? `<div style="font-size:0.76rem; color:#92400E; margin:-6px 0 10px 0; line-height:1.4;">💵 Belum dibayar — bayar tunai di toko saat mengambil.</div>` : ''}
               ${order.payment_status === 'pending' ? `
                 <button class="btn-action btn-action-primary" onclick="window.resumePayment('${esc(order.no_invoice)}')" style="width: 100%; justify-content: center; margin-bottom: 8px;">
-                  💳 Bayar Sekarang
+                  ${isManualMode() ? '💳 Cara Bayar & Kirim Bukti' : '💳 Bayar Sekarang'}
                 </button>
                 <button class="btn-action btn-action-secondary" onclick="window.openChangePayment('${esc(order.no_invoice)}')" style="width: 100%; justify-content: center; margin-bottom: 8px;">
                   🔄 Ganti Metode Bayar

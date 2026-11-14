@@ -20,12 +20,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const db = require('./db');
+const MANUAL = require('./pembayaran-manual');
 
 const ROOT = path.join(__dirname, '..');
 const IS_PROD = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 3000;
 const STORE_WA = (process.env.STORE_WHATSAPP || '6285385490505').replace(/\D/g, '');
-const PAYMENT_WINDOW_MINUTES = Number(process.env.PAYMENT_WINDOW_MINUTES) || 180;
+// 'manual' (default) = transfer/QRIS/e-wallet + bukti via WhatsApp, admin konfirmasi | 'midtrans' = otomatis via Midtrans
+const PAYMENT_PROVIDER = String(process.env.PAYMENT_PROVIDER || 'manual').toLowerCase() === 'midtrans' ? 'midtrans' : 'manual';
+const PAYMENT_WINDOW_MINUTES = Number(process.env.PAYMENT_WINDOW_MINUTES) || (PAYMENT_PROVIDER === 'midtrans' ? 180 : 1440);
 const AUTO_COMPLETE_DAYS = Math.max(1, Number(process.env.AUTO_COMPLETE_DAYS) || 7);
 
 // ------------------------------------------------------------------
@@ -79,10 +82,13 @@ const MT_API_BASE = MT_PROD ? 'https://api.midtrans.com' : 'https://api.sandbox.
 
 // 'midtrans' = pembayaran sungguhan | 'mock' = simulasi lokal (HANYA di luar produksi) | 'disabled'
 let PAYMENT_MODE = 'disabled';
-if (MT_SERVER_KEY && MT_CLIENT_KEY) PAYMENT_MODE = 'midtrans';
+if (PAYMENT_PROVIDER === 'manual') PAYMENT_MODE = 'manual';
+else if (MT_SERVER_KEY && MT_CLIENT_KEY) PAYMENT_MODE = 'midtrans';
 else if (!IS_PROD) PAYMENT_MODE = 'mock';
 
-if (PAYMENT_MODE === 'midtrans') {
+if (PAYMENT_MODE === 'manual') {
+  console.log('[pembayaran] MANUAL: transfer / QRIS / e-wallet, bukti dikirim via WhatsApp, admin konfirmasi lunas.');
+} else if (PAYMENT_MODE === 'midtrans') {
   if (MT_PROD && /^SB-/.test(MT_SERVER_KEY)) {
     console.error('KONFIGURASI SALAH: MIDTRANS_IS_PRODUCTION=true tetapi Server Key berawalan "SB-" (kunci Sandbox). Pembayaran dinonaktifkan.');
     PAYMENT_MODE = 'disabled';
@@ -117,7 +123,6 @@ async function midtransRequest(method, url, body) {
 // ------------------------------------------------------------------
 const COURIERS = {
   'JD Express': 3500,
-  'J&T Express': 5500,
   'Ambil di Toko': 0
 };
 
@@ -135,7 +140,11 @@ const PAYMENT_METHODS = {
   // COD hanya untuk Ambil di Toko (bayar tunai di outlet). Tidak lewat Midtrans.
   cod_toko:   { label: 'Bayar di Toko (COD)',        enabled: null, cod: true, only: 'toko' }
 };
-const isCodCode = (c) => Object.prototype.hasOwnProperty.call(PAYMENT_METHODS, String(c)) && !!PAYMENT_METHODS[String(c)].cod;
+// Mode manual: metode = rekening/QRIS di lib/pembayaran-manual.js (+ COD di toko).
+const MANUAL_METHODS = { cod_toko: PAYMENT_METHODS.cod_toko };
+MANUAL.methods.forEach(m => { MANUAL_METHODS[m.code] = { label: m.label, manual: true }; });
+const ACTIVE_METHODS = PAYMENT_MODE === 'manual' ? MANUAL_METHODS : PAYMENT_METHODS;
+const isCodCode = (c) => Object.prototype.hasOwnProperty.call(ACTIVE_METHODS, String(c)) && !!ACTIVE_METHODS[String(c)].cod;
 
 const CANCEL_REASONS = {
   salah_produk: 'Salah memilih produk / ingin mengubah isi pesanan',
@@ -503,6 +512,7 @@ app.get('/api/config', (req, res) => {
     data: {
       cancelReasons: CANCEL_REASONS,
       paymentMode: PAYMENT_MODE,
+      manualPayments: PAYMENT_MODE === 'manual' ? MANUAL : null,
       snapJsUrl: `${MT_SNAP_BASE}/snap/snap.js`,
       midtransClientKey: PAYMENT_MODE === 'midtrans' ? MT_CLIENT_KEY : '',
       googleClientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -671,9 +681,9 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
     const alamat = cleanText(req.body.alamat, 400);
     const kurirCode = String(req.body.kurir_code || '');
     const rawItems = Array.isArray(req.body.items) ? req.body.items : [];
-    const payCode = String(req.body.payment_code || 'semua');
-    if (!Object.prototype.hasOwnProperty.call(PAYMENT_METHODS, payCode)) throw new Error('Metode pembayaran tidak valid.');
-    const payMethod = PAYMENT_METHODS[payCode];
+    const payCode = String(req.body.payment_code || (PAYMENT_MODE === 'manual' ? 'm_qris' : 'semua'));
+    if (!Object.prototype.hasOwnProperty.call(ACTIVE_METHODS, payCode)) throw new Error('Metode pembayaran tidak valid.');
+    const payMethod = ACTIVE_METHODS[payCode];
 
     if (nama.length < 3) throw new Error('Nama penerima tidak valid.');
     if (!/^(\+62|62|0)8\d{7,12}$/.test(no_hp)) throw new Error('Nomor WhatsApp tidak valid (contoh: 081234567890).');
@@ -718,7 +728,7 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
       `, [req.user.id, invoice, nama, no_hp, alamat, kurirLabel, ongkir, payMethod.label, total_belanja, total_bayar,
         payMethod.cod ? 'Diproses' : 'Menunggu Pembayaran', payMethod.cod ? 'cod' : 'pending',
         JSON.stringify(orderItems), nowSql(), payMethod.cod ? '' : expiresAt, invoice]);
-      if (!payMethod.cod) await t.run('INSERT INTO midtrans_attempts (mt_order_id, order_id, created_at) VALUES (?, ?, ?)', [invoice, r.lastInsertRowid, nowSql()]);
+      if (!payMethod.cod && PAYMENT_MODE !== 'manual') await t.run('INSERT INTO midtrans_attempts (mt_order_id, order_id, created_at) VALUES (?, ?, ?)', [invoice, r.lastInsertRowid, nowSql()]);
       if (!req.user.no_hp || !req.user.alamat) {
         await t.run("UPDATE users SET no_hp = CASE WHEN no_hp = '' THEN ? ELSE no_hp END, alamat = CASE WHEN alamat = '' THEN ? ELSE alamat END WHERE id = ?",
           [no_hp, alamat, req.user.id]);
@@ -729,6 +739,11 @@ app.post('/api/orders', orderLimiter, requireUser, ah(async (req, res) => {
     if (payMethod.cod) {
       await notifyAdmin(`🛒 PESANAN COD BARU (bayar tunai di toko saat ambil)\n${orderSummary(order)}`);
       return res.status(201).json({ success: true, data: publicOrder(order), payment: null });
+    }
+
+    if (PAYMENT_MODE === 'manual') {
+      await notifyAdmin(`🧾 PESANAN BARU - MENUNGGU PEMBAYARAN (${payMethod.label})\n${orderSummary(order)}\n\nPelanggan akan mengirim bukti bayar lewat WhatsApp. Cek buktinya, lalu klik "Konfirmasi Lunas" di panel admin.`);
+      return res.status(201).json({ success: true, data: publicOrder(order), payment: { mode: 'manual', method: payCode } });
     }
 
     let pay;
@@ -843,8 +858,13 @@ app.post('/api/orders/:invoice/change-payment', requireUser, async (req, res) =>
     if (new Date(o.expires_at).getTime() < Date.now()) return res.status(400).json({ success: false, message: 'Batas waktu pembayaran sudah lewat.' });
 
     const payCode = String(req.body.payment_code || '');
-    if (!Object.prototype.hasOwnProperty.call(PAYMENT_METHODS, payCode)) return res.status(400).json({ success: false, message: 'Metode pembayaran tidak valid.' });
-    const method = PAYMENT_METHODS[payCode];
+    if (!Object.prototype.hasOwnProperty.call(ACTIVE_METHODS, payCode)) return res.status(400).json({ success: false, message: 'Metode pembayaran tidak valid.' });
+    const method = ACTIVE_METHODS[payCode];
+    if (PAYMENT_MODE === 'manual') {
+      if (method.cod) return res.status(400).json({ success: false, message: 'Metode COD hanya bisa dipilih saat membuat pesanan.' });
+      await db.run("UPDATE orders SET metode_bayar=?, payment_type='' WHERE id=?", [method.label, o.id]);
+      return res.json({ success: true, data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])), payment: { mode: 'manual', method: payCode } });
+    }
 
     const cnt = await db.get('SELECT COUNT(*) AS c FROM midtrans_attempts WHERE order_id = ?', [o.id]);
     const newMtId = `${o.no_invoice}-${cnt.c + 1}`;
@@ -914,15 +934,46 @@ app.post('/api/orders/:id/cancel-request/reject', requireAdmin, ah(async (req, r
   res.json({ success: true, message: 'Pengajuan pembatalan ditolak.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
 }));
 
-// COD: admin menandai lunas manual setelah uang tunai diterima.
+// Admin menandai LUNAS secara manual:
+//  - COD di toko: setelah uang tunai diterima.
+//  - Transfer/QRIS/e-wallet (mode manual): setelah bukti bayar dari pelanggan dicek.
+//    Pesanan yang sudah kedaluwarsa tetapi ternyata dibayar tetap bisa dikonfirmasi (stok diambil lagi).
 app.post('/api/orders/:id/mark-paid', requireAdmin, ah(async (req, res) => {
   const o = await db.get('SELECT * FROM orders WHERE id = ?', [Number(req.params.id)]);
   if (!o) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
-  if (o.payment_status !== 'cod') return res.status(400).json({ success: false, message: 'Hanya pesanan COD yang belum dibayar yang bisa ditandai lunas.' });
-  if (['Dibatalkan', 'Kedaluwarsa'].includes(o.status)) return res.status(400).json({ success: false, message: 'Pesanan sudah dibatalkan.' });
-  const u = await db.run("UPDATE orders SET payment_status='paid', payment_type='cod', paid_at=? WHERE id=? AND payment_status='cod'", [nowSql(), o.id]);
-  if (!u.changes) return res.status(409).json({ success: false, message: 'Status pesanan baru saja berubah. Muat ulang halaman.' });
-  res.json({ success: true, message: 'Pesanan COD ditandai lunas.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
+
+  if (o.payment_status === 'cod') {
+    if (['Dibatalkan', 'Kedaluwarsa'].includes(o.status)) return res.status(400).json({ success: false, message: 'Pesanan sudah dibatalkan.' });
+    const u = await db.run("UPDATE orders SET payment_status='paid', payment_type='cod', paid_at=? WHERE id=? AND payment_status='cod'", [nowSql(), o.id]);
+    if (!u.changes) return res.status(409).json({ success: false, message: 'Status pesanan baru saja berubah. Muat ulang halaman.' });
+    return res.json({ success: true, message: 'Pesanan COD ditandai lunas.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
+  }
+
+  if (PAYMENT_MODE === 'manual' && ['pending', 'expired'].includes(o.payment_status)) {
+    try {
+      await db.tx(async (t) => {
+        const cur = await t.get('SELECT * FROM orders WHERE id = ?', [o.id]);
+        if (!cur || !['pending', 'expired'].includes(cur.payment_status)) throw new Error('STATUS_BERUBAH');
+        if (cur.payment_status === 'expired' && cur.stock_restored) {
+          for (const it of JSON.parse(cur.items_json)) {
+            const u = await t.run('UPDATE products SET stok = stok - ? WHERE id = ? AND stok >= ?', [it.qty, it.id, it.qty]);
+            if (!u.changes) throw new Error(`Stok "${it.nama}" tidak cukup untuk mengaktifkan kembali pesanan yang sudah kedaluwarsa.`);
+          }
+          await t.run('UPDATE orders SET stock_restored = 0 WHERE id = ?', [cur.id]);
+        }
+        await t.run(`UPDATE orders SET payment_status='paid', paid_at=?, expires_at='',
+                     payment_type = CASE WHEN payment_type = '' THEN 'manual' ELSE payment_type END,
+                     status = CASE WHEN status IN ('Menunggu Pembayaran','Kedaluwarsa') THEN 'Diproses' ELSE status END
+                     WHERE id = ?`, [nowSql(), cur.id]);
+      });
+    } catch (e) {
+      if (e.message === 'STATUS_BERUBAH') return res.status(409).json({ success: false, message: 'Status pesanan baru saja berubah. Muat ulang halaman.' });
+      return res.status(409).json({ success: false, message: e.message });
+    }
+    return res.json({ success: true, message: 'Pembayaran dikonfirmasi. Pesanan masuk status Diproses.', data: publicOrder(await db.get('SELECT * FROM orders WHERE id = ?', [o.id])) });
+  }
+
+  return res.status(400).json({ success: false, message: 'Pesanan ini tidak menunggu konfirmasi pembayaran.' });
 }));
 
 const STATUS_ALLOWED = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan', 'Kedaluwarsa'];
@@ -938,7 +989,7 @@ app.put('/api/orders/:id/status', requireAdmin, ah(async (req, res) => {
   }
   const needsPaid = ['Diproses', 'Dikirim', 'Selesai'].includes(status);
   if (needsPaid && !['paid', 'legacy', 'cod'].includes(o.payment_status)) {
-    return res.status(400).json({ success: false, message: 'Pesanan belum dibayar. Status hanya bisa diubah setelah pembayaran dikonfirmasi Midtrans.' });
+    return res.status(400).json({ success: false, message: 'Pesanan belum dibayar. Klik "Konfirmasi Lunas" dulu setelah bukti pembayaran dicek.' });
   }
   if (status === 'Dibatalkan' && o.payment_status === 'pending' && PAYMENT_MODE === 'midtrans') {
     try { await midtransRequest('POST', `${MT_API_BASE}/v2/${encodeURIComponent(o.midtrans_order_id || o.no_invoice)}/cancel`); } catch (e) { /* abaikan */ }
